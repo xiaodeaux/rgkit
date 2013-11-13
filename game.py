@@ -4,6 +4,7 @@ import random
 import sys
 import traceback
 import imp
+import json
 ###
 from robotexception import *
 from settings import settings
@@ -198,13 +199,6 @@ class Game:
             'turn': self.turns,
         }
 
-    def notify_new_turn(self):
-        for player_id in range(2):
-            user_robot = self._players[player_id].get_robot()
-            if hasattr(user_robot, 'on_new_turn'):
-                if inspect.ismethod(user_robot.on_new_turn):
-                    user_robot.on_new_turn()
-
     def make_robots_act(self):
         global settings
 
@@ -221,10 +215,7 @@ class Game:
                 if not InternalRobot.is_valid_action(next_action):
                     raise Exception('%s is not a valid action' % str(next_action))
             except Exception:
-                print "The robot at (%s, %s) raised an exception:" % robot.location
-                print '-' * 60
                 traceback.print_exc(file=sys.stdout)
-                print '-' * 60
                 next_action = ['guard']
             actions[robot] = next_action
 
@@ -284,7 +275,6 @@ class Game:
     def run_turn(self):
         global settings
 
-        self.notify_new_turn()
         self.make_robots_act()
         self.remove_dead()
 

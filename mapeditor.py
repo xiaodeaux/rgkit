@@ -34,20 +34,21 @@ Just for yourself
 Other functions
 ===============
 [d] fill board with selected color
-[f] print map data to console (save as .py to create a map file)
+[f] save map data to newmap.py
 [i] invert black and white colors
 '''
 
 class MapEditor:
-    def __init__(self, settings.board_size, blocksize, padding):
-        self._settings.board_size = settings.board_size
+    def __init__(self, blocksize, padding):
         self._blocksize = blocksize
         self._padding = padding
         self.make_canvas()
 
     def make_canvas(self):
+        global settings
+
         root = Tkinter.Tk()
-        size = (self._blocksize + self._padding) * self._settings.board_size + self._padding * 2 + 40
+        size = (self._blocksize + self._padding) * settings.board_size + self._padding * 2 + 40
 
         self._canvas = Tkinter.Canvas(root, width=size, height=size)
         self._rect_items = []
@@ -63,8 +64,8 @@ class MapEditor:
         root.mainloop()
 
     def prepare_backdrop(self, size):
-        for y in range(self._settings.board_size):
-            for x in range(self._settings.board_size):
+        for y in range(settings.board_size):
+            for x in range(settings.board_size):
                 item = self._canvas.create_rectangle(
                     x * (self._blocksize + self._padding) + self._padding + 20, y * (self._blocksize + self._padding) + self._padding + 20,
                     (x+1) * (self._blocksize + self._padding) + 20, (y+1) * (self._blocksize + self._padding) + 20,
@@ -115,7 +116,9 @@ class MapEditor:
             self.paint_square(item_id=i)
             self._canvas.itemconfigure(item, fill=self._current_color)
 
-    def print_map(self):
+    def save_map(self):
+        global settings
+
         coords = {}
         label_mapping = dict(color_mapping.values())
 
@@ -125,8 +128,11 @@ class MapEditor:
 
         for i, color in enumerate(self._colors):
             if color in label_mapping and label_mapping[color] is not None:
-                coords[label_mapping[color]].append((i % self._settings.board_size, int(i / self._settings.board_size)))
-        print coords
+                coords[label_mapping[color]].append((i % settings.board_size, int(i / settings.board_size)))
+
+        with open('newmap.py', 'w') as f:
+            f.write(str(coords))
+            print 'saved!'
 
     def invert_colors(self):
         old_color = self._current_color
@@ -148,7 +154,7 @@ class MapEditor:
 
         func_map = {
             'd': self.paint_all,
-            'f': self.print_map,
+            'f': self.save_map,
             'i': self.invert_colors
         }
 
@@ -157,4 +163,4 @@ class MapEditor:
 
 if __name__ == '__main__':
     print_instructions()
-    MapEditor(settings.board_size, BLOCKSIZE, PADDING)
+    MapEditor(BLOCKSIZE, PADDING)
