@@ -121,6 +121,8 @@ class InternalRobot:
 
     def call_move(self, loc, action_table):
         global settings
+
+        loc = tuple(map(int, loc))
         try:
             if self.can_act(loc, action_table):
                 self.location = loc
@@ -139,6 +141,9 @@ class InternalRobot:
             pass
 
     def call_attack(self, loc, action_table, damage=None):
+        global settings
+
+        loc = tuple(map(int, loc))
         if damage is None:
             damage = random.randint(*settings.attack_range)
         try:
@@ -221,7 +226,11 @@ class Game:
 
         for robot, action in actions.iteritems():
             old_loc = robot.location
-            robot.issue_command(action, actions)
+            try:
+                robot.issue_command(action, actions)
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+                robot.issue_command(['guard'])
             if robot.location != old_loc:
                 self._field[old_loc] = None
                 self._field[robot.location] = robot
