@@ -4,9 +4,9 @@ settings = {
     'spawn_per_player': 5,
     'board_size': 19,
     'robot_hp': 50,
-    'attack_range': (15, 20),
+    'attack_range': (8, 10),
     'collision_damage': 5,
-    'suicide_damage': 10,
+    'suicide_damage': 15,
     'max_turns': 100,
     
     # rendering
