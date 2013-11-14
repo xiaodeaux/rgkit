@@ -1,6 +1,6 @@
 settings = {
     # game settings
-    'spawn_every': 10,
+    'spawn_every': 100,
     'spawn_per_player': 5,
     'board_size': 19,
     'robot_hp': 50,
@@ -10,7 +10,7 @@ settings = {
     'max_turns': 100,
     
     # rendering
-    'turn_interval': 100,
+    'turn_interval': 2000,
     
     # rating systems
     'rating_range': 150,

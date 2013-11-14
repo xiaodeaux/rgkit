@@ -12,7 +12,7 @@ if __name__ == '__main__':
         sys.exit()
 
     players = [make_player(x) for x in sys.argv[1:3]]
-    g = game.Game(*players)
+    g = game.Game(*players, record_turns=True)
 
     map_name = os.path.join(os.path.dirname(__file__), 'maps/default.py')
     if len(sys.argv) > 3:
@@ -20,3 +20,4 @@ if __name__ == '__main__':
 
     game.init_settings(map_name)
     render.Render(g, game.settings)
+    print g.history

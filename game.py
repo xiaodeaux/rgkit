@@ -105,9 +105,8 @@ class InternalRobot:
                 if params[0] == loc:
                     moving.append(robot)
                 elif robot.location == loc:
-                    if move_stack is None:
-                        move_stack = [self]
-                    move_stack.append(robot)
+                    move_stack = move_stack or []
+                    move_stack.append(self)
                     if not robot.can_act(params[0], action_table, True, move_stack):
                         if no_raise:
                             return False
@@ -144,8 +143,8 @@ class InternalRobot:
         global settings
 
         loc = tuple(map(int, loc))
-        if damage is None:
-            damage = random.randint(*settings.attack_range)
+        damage = int(damage or random.randint(*settings.attack_range))
+
         try:
             self.can_act(loc, action_table)
         except UnitGuardCollision as e:
@@ -157,7 +156,7 @@ class InternalRobot:
                     robot.hp -= damage
         except UnitBlockCollision as e:
             if e.other_robot.player_id != self.player_id:
-               e.other_robot.hp -= int(damage)
+                e.other_robot.hp -= damage
         except RobotException:
             pass
 
@@ -230,10 +229,12 @@ class Game:
                 robot.issue_command(action, actions)
             except Exception:
                 traceback.print_exc(file=sys.stdout)
-                robot.issue_command(['guard'])
+                robot.issue_command(['guard'], actions)
+                actions[robot] = ['guard']
             if robot.location != old_loc:
                 self._field[old_loc] = None
                 self._field[robot.location] = robot
+        return actions
 
     def robot_at_loc(self, loc):
         robot = self._field[loc]
@@ -250,10 +251,15 @@ class Game:
     def spawn_robot_batch(self):
         global settings
 
+        self.spawn_robot(0, (9, 8))
+        self.spawn_robot(1, (9, 9))
+
+        '''
         locs = random.sample(settings.spawn_coords, settings.spawn_per_player * 2)
         for player_id in range(2):
             for i in range(settings.spawn_per_player):
                 self.spawn_robot(player_id, locs.pop())
+                '''
 
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
@@ -268,8 +274,7 @@ class Game:
             if self._field[robot.location] == robot:
                 self._field[robot.location] = None
 
-    def make_history(self):
-        # indeed, let's hope this game does
+    def make_history(self, actions):
         global settings
 
         robots = [[] for i in range(2)]
@@ -278,13 +283,15 @@ class Game:
             for prop in settings.exposed_properties:
                 if prop != 'player_id':
                     robot_info.append(getattr(robot, prop))
+            if robot in actions:
+                robot_info.append(actions[robot])
             robots[robot.player_id].append(robot_info)
         return robots
 
     def run_turn(self):
         global settings
 
-        self.make_robots_act()
+        actions = self.make_robots_act()
         self.remove_dead()
 
         if self.turns % settings.spawn_every == 0:
@@ -292,7 +299,7 @@ class Game:
             self.spawn_robot_batch()
 
         if self._record:
-            round_history = self.make_history()
+            round_history = self.make_history(actions)
             for i in (0, 1):
                 self.history[i].append(round_history[i])
 
