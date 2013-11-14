@@ -9,6 +9,7 @@ import json
 from robotexception import *
 from settings import settings
 import rg
+import defaultrobots
 
 def init_settings(map_file):
     global settings
@@ -17,39 +18,43 @@ def init_settings(map_file):
     settings.obstacles = map_data['obstacle']
     rg.set_settings(settings)
 
-class DefaultRobot:
-    def act(self, game):
-        return ['guard']
-
 class Player:
-    def __init__(self, code=None, robot=None):
+    def __init__(self, code=None, robots=None):
         if code is not None:
-            self._robot = None
             self._mod = imp.new_module('usercode%d' % id(self))
             exec code in self._mod.__dict__
-        elif robot is not None:
-            self._robot = robot
+            self._robots = None
+        elif robots is not None:
+            self._mod = None
+            self._robots = robots
         else:
             raise Exception('you need to provide code or a module')
+        self._cache = {}
 
-    def get_usercode_obj(self, class_name, default):
-        if hasattr(self._mod, class_name):
-            if inspect.isclass(getattr(self._mod, class_name)):
-                return getattr(self._mod, class_name)()
-        return default()
+    def get_obj(self, class_name):
+        if self._robots is not None:
+            if class_name in self._robots:
+                return self._robots[class_name]
 
-    def get_robot(self):
-        if self._robot is not None:
-            return self._robot
-        self._robot = self.get_usercode_obj('Robot', DefaultRobot)
-        return self._robot
+        if class_name in self._cache:
+            return self._cache[class_name]
+
+        mod = defaultrobots
+        if self._mod is not None:
+            if hasattr(self._mod, class_name):
+                if inspect.isclass(getattr(self._mod, class_name)):
+                    mod = self._mod
+
+        self._cache[class_name] = getattr(mod, class_name)()
+        return self._cache[class_name]
 
 class InternalRobot:
-    def __init__(self, location, hp, player_id, field):
+    def __init__(self, location, hp, player_id, field, robot_type):
         self.location = location
         self.hp = hp
         self.player_id = player_id
         self.field = field
+        self.robot_type = robot_type
         
     @staticmethod
     def parse_command(action):
@@ -139,6 +144,12 @@ class InternalRobot:
         except RobotException:
             pass
 
+    @staticmethod
+    def damage_robot(robot, damage):
+        if robot.robot_type == 'TankRobot':
+            damage = int(damage / 2)
+        robot.hp -= damage
+
     def call_attack(self, loc, action_table, damage=None):
         global settings
 
@@ -194,7 +205,6 @@ class Game:
 
     def build_game_info(self):
         global settings
-
         return {
             'robots': dict((
                 y.location,
@@ -210,7 +220,7 @@ class Game:
         actions = {}
 
         for robot in self._robots:
-            user_robot = self._players[robot.player_id].get_robot()
+            user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
             for prop in settings.exposed_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
 
@@ -240,21 +250,42 @@ class Game:
         robot = self._field[loc]
         return robot.player_id if robot else None
 
-    def spawn_robot(self, player_id, loc):
+    def spawn_robot(self, player_id, loc, robot_type):
         if self.robot_at_loc(loc) is not None:
             return False
 
-        robot = InternalRobot(loc, settings.robot_hp, player_id, self._field)
+        robot = InternalRobot(loc, settings.robot_hp, player_id, self._field, robot_type)
         self._robots.append(robot)
         self._field[loc] = robot
 
+    def validate_spawns(self, spawns):
+        global settings
+
+        ok_spawns = list(settings.user_obj_types)
+        for spawn in spawns:
+            if not (spawn.endswith('Robot') and spawn in ok_spawns):
+                raise Exception('%s not a valid type of robot' % spawn)
+        if len(spawns) > settings.spawn_per_player:
+            spawns = spawns[:settings.spawn_per_player]
+        return spawns
+
+        
     def spawn_robot_batch(self):
         global settings
 
         locs = random.sample(settings.spawn_coords, settings.spawn_per_player * 2)
-        for player_id in range(2):
-            for i in range(settings.spawn_per_player):
-                self.spawn_robot(player_id, locs.pop())
+        for player_id in (0, 1):
+            try:
+                commander = self._players[player_id].get_obj('Commander')
+                game_info = self.build_game_info()
+                spawns = commander.spawn(game_info)
+                spawns = self.validate_spawns(spawns)
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+                spawns = ['Robot'] * settings.spawn_per_player
+
+            for spawn_type in spawns:
+                self.spawn_robot(player_id, locs.pop(), spawn_type)
 
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
