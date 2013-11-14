@@ -251,15 +251,10 @@ class Game:
     def spawn_robot_batch(self):
         global settings
 
-        self.spawn_robot(0, (9, 8))
-        self.spawn_robot(1, (9, 9))
-
-        '''
         locs = random.sample(settings.spawn_coords, settings.spawn_per_player * 2)
         for player_id in range(2):
             for i in range(settings.spawn_per_player):
                 self.spawn_robot(player_id, locs.pop())
-                '''
 
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
