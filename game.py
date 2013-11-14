@@ -16,6 +16,8 @@ def init_settings(map_file):
     map_data = ast.literal_eval(open(map_file).read())
     settings.spawn_coords = map_data['spawn']
     settings.obstacles = map_data['obstacle']
+    settings.start1 = map_data['start1']
+    settings.start2 = map_data['start2']
     rg.set_settings(settings)
 
 class Player:
@@ -199,9 +201,18 @@ class Game:
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
+        self.spawn_starting()
+
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
+
+    def spawn_starting(self):
+        global settings
+        for coord in settings.start1:
+            self.spawn_robot(0, coord, 'Robot')
+        for coord in settings.start2:
+            self.spawn_robot(1, coord, 'Robot')
 
     def build_game_info(self):
         global settings

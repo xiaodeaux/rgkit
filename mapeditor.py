@@ -8,9 +8,9 @@ color_mapping = {
     'a': ('black', 'obstacle'),
     's': ('#ddd', None),
     'g': ('darkgreen', 'spawn'),
-    'h': ('lightgreen', None),
+    't': ('pink', 'start1'),
+    'h': ('lightgreen', 'start2'),
     'r': ('darkred', None),
-    't': ('pink', None),
 }
 
 def print_instructions():
@@ -18,18 +18,18 @@ def print_instructions():
 I made this map editor to use for myself. Therefore, it might not seem
 very user-friendly, but it's not that hard. There are just a bunch of
 keyboard shortcuts to use.
-
+t
 Game-related colors
 ===================
 [a] paint black (obstacle)
 [s] erase (walking space)
 [g] paint green (spawn point)
+[t] paint pink (starting robot for p1)
+[h] paint light green (starting robot for p2)
 
 Just for yourself
 =================
-[h] paint light green
 [r] paint red
-[t] paint pink
 
 Other functions
 ===============
