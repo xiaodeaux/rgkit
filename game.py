@@ -132,23 +132,23 @@ class InternalRobot:
                 self.location = loc
         except UnitGuardCollision as e:
             if e.other_robot.player_id != self.player_id:
-                self.hp -= settings.collision_damage
+                InternalRobot.damage_robot(self, settings.collision_damage)
         except UnitMoveCollision as e:
             for robot in e.other_robots:
                 if robot.player_id != self.player_id:
-                    robot.hp -= settings.collision_damage
+                    InternalRobot.damage_robot(robot, settings.collision_damage)
         except UnitBlockCollision as e:
             if e.other_robot.player_id != self.player_id:
-                self.hp -= settings.collision_damage
-                e.other_robot.hp -= settings.collision_damage
+                InternalRobot.damage_robot(self, settings.collision_damage)
+                InternalRobot.damage_robot(e.other_robot, settings.collision_damage)
         except RobotException:
             pass
 
     @staticmethod
     def damage_robot(robot, damage):
         if robot.robot_type == 'TankRobot':
-            damage = int(damage / 2)
-        robot.hp -= damage
+            damage /= 2
+        robot.hp -= int(damage)
 
     def call_attack(self, loc, action_table, damage=None):
         global settings
@@ -160,14 +160,14 @@ class InternalRobot:
             self.can_act(loc, action_table)
         except UnitGuardCollision as e:
             if e.other_robot.player_id != self.player_id:
-                e.other_robot.hp -= int(damage / 2)
+                InternalRobot.damage_robot(e.other_robot, damage / 2)
         except UnitMoveCollision as e:
             for robot in e.other_robots:
                 if robot.player_id != self.player_id:
-                    robot.hp -= damage
+                    InternalRobot.damage_robot(robot, damage)
         except UnitBlockCollision as e:
             if e.other_robot.player_id != self.player_id:
-                e.other_robot.hp -= damage
+                InternalRobot.damage_robot(e.other_robot, damage)
         except RobotException:
             pass
 
