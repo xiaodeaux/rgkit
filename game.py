@@ -201,7 +201,6 @@ class Game:
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
-        self.spawn_starting()
 
         self._record = record_turns
         if self._record:
@@ -327,6 +326,9 @@ class Game:
 
     def run_turn(self):
         global settings
+
+        if self.turns is 0:
+            self.spawn_starting()
 
         actions = self.make_robots_act()
         self.remove_dead()
