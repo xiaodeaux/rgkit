@@ -62,6 +62,13 @@ class InternalRobot:
     def parse_command(action):
         return (action[0], action[1:])
 
+    @staticmethod
+    def is_valid_action(action):
+        global settings
+
+        cmd, params = InternalRobot.parse_command(action)
+        return cmd in settings.valid_commands
+
     def issue_command(self, action, actions):
         cmd, params = InternalRobot.parse_command(action)
         if cmd == 'move' or cmd == 'attack':
@@ -81,70 +88,25 @@ class InternalRobot:
             filter_out=['invalid', 'obstacle'])
         return loc in good_around
 
-    def can_act(self, loc, action_table, no_raise=False, move_stack=None):
-        global settings
+    def is_collision(self, loc, robot, cmd, params, actions, move_exclude):
+        if cmd != 'move':
+            return robot.location == loc
+        if params[0] == loc:
+            if move_exclude is None or robot not in move_exclude:
+                return True
+        elif robot.location == loc:
+            move_exclude = (move_exclude or []) + [robot]
+            return (len(self.get_collisions(params[0], actions, move_exclude)) > 0)
+        return False
 
-        if move_stack is not None and self in move_stack:
-            return self == move_stack[0]
-        if not self.movable_loc(loc):
-            return False
-
-        moving = []
-
+    def get_collisions(self, loc, action_table, move_exclude=None):
+        collisions = []
         nearby_robots = self.get_robots_around(loc)
         for robot in nearby_robots:
-            if robot == self:
-                continue
-
             cmd, params = InternalRobot.parse_command(action_table[robot])
-
-            if cmd == 'suicide' and robot.location == loc:
-                continue
-            if cmd == 'guard' and robot.location == loc:
-                if no_raise:
-                    return False
-                raise UnitGuardCollision(robot)
-            if cmd == 'attack' and robot.location == loc:
-                if no_raise:
-                    return False
-                raise UnitBlockCollision(robot)
-            if cmd == 'move':
-                if params[0] == loc:
-                    moving.append(robot)
-                elif robot.location == loc:
-                    move_stack = move_stack or []
-                    move_stack.append(self)
-                    if not robot.can_act(params[0], action_table, True, move_stack):
-                        if no_raise:
-                            return False
-                        raise UnitBlockCollision(robot)
-                            
-        if len(moving) > 0:
-            if no_raise:
-                return False
-            raise UnitMoveCollision(moving)
-        return True
-
-    def call_move(self, loc, action_table):
-        global settings
-
-        loc = tuple(map(int, loc))
-        try:
-            if self.can_act(loc, action_table):
-                self.location = loc
-        except UnitGuardCollision as e:
-            if e.other_robot.player_id != self.player_id:
-                InternalRobot.damage_robot(self, settings.collision_damage)
-        except UnitMoveCollision as e:
-            for robot in e.other_robots:
-                if robot.player_id != self.player_id:
-                    InternalRobot.damage_robot(robot, settings.collision_damage)
-        except UnitBlockCollision as e:
-            if e.other_robot.player_id != self.player_id:
-                InternalRobot.damage_robot(self, settings.collision_damage)
-                InternalRobot.damage_robot(e.other_robot, settings.collision_damage)
-        except RobotException:
-            pass
+            if self.is_collision(loc, robot, cmd, params, action_table, move_exclude):
+                collisions.append((robot, cmd, params))
+        return collisions
 
     @staticmethod
     def damage_robot(robot, damage):
@@ -152,39 +114,44 @@ class InternalRobot:
             damage /= 2
         robot.hp -= int(damage)
 
+    def call_move(self, loc, action_table):
+        global settings
+        print 'trying to move from', self.location
+
+        loc = tuple(map(int, loc))
+        collisions = self.get_collisions(loc, action_table)
+        print 'collisions', collisions
+        
+        for robot, cmd, params in collisions:
+            if robot.player_id != self.player_id:
+                if cmd != 'guard':
+                    InternalRobot.damage_robot(robot, settings.collision_damage)
+                if cmd != 'move':
+                    InternalRobot.damage_robot(self, settings.collision_damage)
+
+        if len(collisions) == 0:
+            self.location = loc
+
     def call_attack(self, loc, action_table, damage=None):
         global settings
 
+        print 'trying to attack from', self.location
+
         loc = tuple(map(int, loc))
         damage = int(damage or random.randint(*settings.attack_range))
-
-        try:
-            self.can_act(loc, action_table)
-        except UnitGuardCollision as e:
-            if e.other_robot.player_id != self.player_id:
-                InternalRobot.damage_robot(e.other_robot, damage / 2)
-        except UnitMoveCollision as e:
-            for robot in e.other_robots:
-                if robot.player_id != self.player_id:
-                    InternalRobot.damage_robot(robot, damage)
-        except UnitBlockCollision as e:
-            if e.other_robot.player_id != self.player_id:
-                InternalRobot.damage_robot(e.other_robot, damage)
-        except RobotException:
-            pass
+        collisions = self.get_collisions(loc, action_table)
+        print 'collisions', collisions
+        
+        for robot, cmd, params in collisions:
+            if robot.player_id != self.player_id:
+                InternalRobot.damage_robot(robot,
+                    damage if cmd != 'guard' else damage / 2)
 
     def call_suicide(self, action_table):
         self.hp = 0
         self.call_attack(self.location, action_table, damage=settings.suicide_damage)
         for loc in rg.locs_around(self.location):
             self.call_attack(loc, action_table, damage=settings.suicide_damage)
-
-    @staticmethod
-    def is_valid_action(action):
-        global settings
-
-        cmd, params = InternalRobot.parse_command(action)
-        return cmd in settings.valid_commands
 
 # just to make things easier
 class Field:
@@ -327,7 +294,7 @@ class Game:
     def run_turn(self):
         global settings
 
-        if self.turns is 0:
+        if self.turns == 0:
             self.spawn_starting()
 
         actions = self.make_robots_act()
