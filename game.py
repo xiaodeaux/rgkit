@@ -1,4 +1,3 @@
-import ast
 import inspect
 import random
 import os
@@ -11,9 +10,8 @@ from settings import settings
 import rg
 import defaultrobots
 
-def init_settings(map_file):
+def init_settings(map_data):
     global settings
-    map_data = ast.literal_eval(open(map_file).read())
     settings.spawn_coords = map_data['spawn']
     settings.obstacles = map_data['obstacle']
     settings.start1 = map_data['start1']
@@ -62,12 +60,18 @@ class InternalRobot:
     def parse_command(action):
         return (action[0], action[1:])
 
-    @staticmethod
-    def is_valid_action(action):
+    def is_valid_action(self, action):
         global settings
 
         cmd, params = InternalRobot.parse_command(action)
-        return cmd in settings.valid_commands
+        if not cmd in settings.valid_commands:
+            return False
+
+        if cmd == 'move' or cmd == 'attack':
+            if not self.movable_loc(params[0]):
+                return False
+
+        return True
 
     def issue_command(self, action, actions):
         cmd, params = InternalRobot.parse_command(action)
@@ -121,7 +125,7 @@ class InternalRobot:
 
         loc = tuple(map(int, loc))
         collisions = self.get_collisions(loc, action_table)
-        
+
         for robot, cmd, params in collisions:
             if robot.player_id != self.player_id:
                 if cmd != 'guard':
@@ -138,7 +142,7 @@ class InternalRobot:
         loc = tuple(map(int, loc))
         damage = int(damage or random.randint(*settings.attack_range))
         collisions = self.get_collisions(loc, action_table)
-        
+
         for robot, cmd, params in collisions:
             if robot.player_id != self.player_id:
                 InternalRobot.damage_robot(robot,
@@ -155,7 +159,10 @@ class Field:
     def __init__(self, size):
         self.field = [[None for x in range(size)] for y in range(size)]
     def __getitem__(self, point):
-        return self.field[point[1]][point[0]]
+        try:
+            return self.field[point[1]][point[0]]
+        except TypeError:
+            print point[1], point[0]
     def __setitem__(self, point, v):
         self.field[point[1]][point[0]] = v
 
@@ -200,8 +207,8 @@ class Game:
 
             try:
                 next_action = user_robot.act(game_info)
-                if not InternalRobot.is_valid_action(next_action):
-                    raise Exception('%s is not a valid action' % str(next_action))
+                if not robot.is_valid_action(next_action):
+                    raise Exception('%s is not a valid action from %s' % (str(next_action), robot.location))
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 next_action = ['guard']

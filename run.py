@@ -1,3 +1,4 @@
+import ast
 import game
 import render
 import sys
@@ -18,6 +19,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 3:
         map_name = sys.argv[3]
 
-    game.init_settings(map_name)
+    map_data = ast.literal_eval(open(map_name).read())
+    game.init_settings(map_data)
     render.Render(g, game.settings)
     print g.history

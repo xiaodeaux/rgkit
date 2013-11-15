@@ -101,7 +101,6 @@ class Render:
         self.update_title(self._turn, self._settings.max_turns)
 
     def determine_color(self, loc):
-
         if loc in self._settings.obstacles:
             return '#222'
 
@@ -112,7 +111,7 @@ class Render:
                     return ('#%X00' if index == 0 else '#0%X0') % colorhex
 
         return 'white'
-       
+
     def paint(self):
         for y in range(self._settings.board_size):
             for x in range(self._settings.board_size):
