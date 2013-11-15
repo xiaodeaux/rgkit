@@ -1,4 +1,6 @@
+import ast
 import Tkinter
+import sys
 from settings import settings
 
 BLOCKSIZE = 20
@@ -15,6 +17,8 @@ color_mapping = {
 
 def print_instructions():
     print '''
+usage: python mapeditor.py [<starting map file>]
+
 I made this map editor to use for myself. Therefore, it might not seem
 very user-friendly, but it's not that hard. There are just a bunch of
 keyboard shortcuts to use.
@@ -39,9 +43,10 @@ Other functions
 '''
 
 class MapEditor:
-    def __init__(self, blocksize, padding):
+    def __init__(self, blocksize, padding, map_file=None):
         self._blocksize = blocksize
         self._padding = padding
+        self._map_file = map_file
         self.make_canvas()
 
     def make_canvas(self):
@@ -56,6 +61,7 @@ class MapEditor:
         self._pressed = False
 
         self.prepare_backdrop(size)
+        self.load_map()
         self.set_color('black')
         self.bind_events()
 
@@ -116,6 +122,22 @@ class MapEditor:
             self.paint_square(item_id=i)
             self._canvas.itemconfigure(item, fill=self._current_color)
 
+    def load_map(self):
+        if self._map_file is None:
+            return
+
+        map_data = ast.literal_eval(open(self._map_file).read())
+
+        label_mapping = dict((v,k) for k, v in color_mapping.values() if v is not None)
+
+        for label, color in label_mapping.iteritems():
+            if label not in map_data:
+                continue
+
+            self.set_color(color)
+            for coord in map_data[label]:
+                self.paint_square(item_id=coord[0] + settings.board_size * coord[1])
+
     def save_map(self):
         global settings
 
@@ -163,4 +185,7 @@ class MapEditor:
 
 if __name__ == '__main__':
     print_instructions()
-    MapEditor(BLOCKSIZE, PADDING)
+    if len(sys.argv) > 1:
+        MapEditor(BLOCKSIZE, PADDING, sys.argv[1])
+    else:
+        MapEditor(BLOCKSIZE, PADDING)
