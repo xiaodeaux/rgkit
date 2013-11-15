@@ -1,6 +1,7 @@
 import ast
 import inspect
 import random
+import os
 import sys
 import traceback
 import imp
@@ -134,12 +135,9 @@ class InternalRobot:
     def call_attack(self, loc, action_table, damage=None):
         global settings
 
-        print 'trying to attack from', self.location
-
         loc = tuple(map(int, loc))
         damage = int(damage or random.randint(*settings.attack_range))
         collisions = self.get_collisions(loc, action_table)
-        print 'collisions', collisions
         
         for robot, cmd, params in collisions:
             if robot.player_id != self.player_id:
