@@ -1,4 +1,3 @@
-rgkit
-=====
+# rgkit -- Testing kit for [robot game](http://robotgame.org) #
 
-Testing kit for robot game
+Please see this [link](http://robotgame.org/kit) for the instructions.
