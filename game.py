@@ -225,7 +225,7 @@ class Game:
 
     def robot_at_loc(self, loc):
         robot = self._field[loc]
-        return robot.player_id if robot else None
+        return robot
 
     def spawn_robot(self, player_id, loc, robot_type):
         if self.robot_at_loc(loc) is not None:
