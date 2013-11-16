@@ -1,3 +1,4 @@
+import ast
 import game
 import sys
 import os
@@ -18,7 +19,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 3:
         map_name = sys.argv[3]
 
-    game.init_settings(map_name)
+    map_data = ast.literal_eval(open(map_name).read())
+    game.init_settings(map_data)
     for i in range(settings.max_turns):
         g.run_turn()
 

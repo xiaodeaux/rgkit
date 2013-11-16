@@ -98,7 +98,7 @@ class InternalRobot:
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
-            if move_exclude is None or robot not in move_exclude:
+            if move_exclude is None or len(move_exclude) <= 1 or robot not in move_exclude:
                 return True
         elif robot.location == loc:
             move_exclude = (move_exclude or []) + [robot]
