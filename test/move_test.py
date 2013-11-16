@@ -46,6 +46,8 @@ class TestMove(unittest.TestCase):
             [(10, 10)], [(11, 10)],
             [(8, 10)], [(7, 10)])
 
+        assert(not self._game.robot_at_loc((10, 10)))
+        assert(not self._game.robot_at_loc((8, 10)))
         self.assertEqual(bot1.hp, settings['robot_hp'])
         self.assertEqual(bot2.hp, settings['robot_hp'])
 
