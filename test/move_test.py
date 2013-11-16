@@ -66,3 +66,14 @@ class TestMove(unittest.TestCase):
 
         self.assertEqual(bot1.hp, settings['robot_hp'])
         self.assertEqual(bot2.hp, settings['robot_hp'])
+
+    def test_move_train(self):
+        [bot1, bot2, bot3], _ = self.simulate(
+            [robot_move_left, robot_move_left],
+            [(10, 10), (11, 10), (12, 10)], [(9, 10), (10, 10), (11, 10)],
+            [], [])
+
+        assert(not self._game.robot_at_loc((12, 10)))
+        assert(bot1)
+        assert(bot2)
+        assert(bot3)
