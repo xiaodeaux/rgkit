@@ -79,3 +79,14 @@ class TestMove(unittest.TestCase):
         assert(bot1)
         assert(bot2)
         assert(bot3)
+
+    def test_train_collision(self):
+        [bot1, bot2, bot3], [bot4] = self.simulate(
+            [robot_move_left, robot_move_right],
+            [(10, 10), (11, 10), (12, 10)], [(10, 10), (11, 10), (12, 10)],
+            [(8, 10)], [(8, 10)])
+
+        self.assertEqual(bot1.hp, settings['robot_hp'] - settings['collision_damage'])
+        self.assertEqual(bot2.hp, settings['robot_hp'])
+        self.assertEqual(bot3.hp, settings['robot_hp'])
+        self.assertEqual(bot4.hp, settings['robot_hp'] - settings['collision_damage'])
