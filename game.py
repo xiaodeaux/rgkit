@@ -203,13 +203,14 @@ class Game:
         }
 
     def adjust_field(self, loc_shifts):
-        exclude = set([])
+        new_robots = {}
+
         for old, new in loc_shifts.iteritems():
-            exclude.add(new)
-            self._field[new] = self._field[old]
+            new_robots[new] = self._field[old]
         for old in loc_shifts:
-            if old not in exclude:
-                self._field[old] = None
+            self._field[old] = None
+        for loc, robot in new_robots.iteritems():
+            self._field[loc] = robot
 
     def make_robots_act(self):
         global settings
