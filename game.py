@@ -98,7 +98,7 @@ class InternalRobot:
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
-            if move_exclude is None or len(move_exclude) <= 1 or robot not in move_exclude:
+            if (not move_exclude) or (len(move_exclude) == 1) or (robot not in move_exclude):
                 return True
         elif robot.location == loc:
             move_exclude = (move_exclude or []) + [robot]
@@ -136,6 +136,7 @@ class InternalRobot:
         if len(collisions) == 0:
             self.location = loc
 
+    # should only be called after all robots have been moved
     def call_attack(self, loc, action_table, damage=None):
         global settings
 
@@ -143,10 +144,14 @@ class InternalRobot:
         damage = int(damage or random.randint(*settings.attack_range))
         collisions = self.get_collisions(loc, action_table)
 
-        for robot, cmd, params in collisions:
-            if robot.player_id != self.player_id:
-                InternalRobot.damage_robot(robot,
-                    damage if cmd != 'guard' else damage / 2)
+        for robot, action in action_table.iteritems():
+            cmd, params = InternalRobot.parse_command(action)
+            if robot.player_id == self.player_id:
+                continue
+            if robot.location != loc:
+                continue
+            InternalRobot.damage_robot(robot,
+                damage if cmd != 'guard' else damage / 2)
 
     def call_suicide(self, action_table):
         self.hp = 0
@@ -167,15 +172,18 @@ class Field:
         self.field[point[1]][point[0]] = v
 
 class Game:
-    def __init__(self, player1, player2, record_turns=False):
+    def __init__(self, player1, player2, record_turns=False, unit_testing=False):
         self._players = (player1, player2)
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
+        self._unit_testing = unit_testing
 
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
+
+        self.spawn_starting()
 
     def spawn_starting(self):
         global settings
@@ -214,17 +222,25 @@ class Game:
                 next_action = ['guard']
             actions[robot] = next_action
 
-        for robot, action in actions.iteritems():
-            old_loc = robot.location
-            try:
-                robot.issue_command(action, actions)
-            except Exception:
-                traceback.print_exc(file=sys.stdout)
-                robot.issue_command(['guard'], actions)
-                actions[robot] = ['guard']
-            if robot.location != old_loc:
-                self._field[old_loc] = None
-                self._field[robot.location] = robot
+        commands = list(settings.valid_commands)
+        commands.remove('move')
+        commands.insert(0, 'move')
+
+        for cmd in commands:
+            for robot, action in actions.iteritems():
+                if action[0] != cmd:
+                    continue
+
+                old_loc = robot.location
+                try:
+                    robot.issue_command(action, actions)
+                except Exception:
+                    traceback.print_exc(file=sys.stdout)
+                    robot.issue_command(['guard'], actions)
+                    actions[robot] = ['guard']
+                if robot.location != old_loc:
+                    self._field[old_loc] = None
+                    self._field[robot.location] = robot
         return actions
 
     def robot_at_loc(self, loc):
@@ -298,20 +314,18 @@ class Game:
     def run_turn(self):
         global settings
 
-        if self.turns == 0:
-            self.spawn_starting()
-
         actions = self.make_robots_act()
         self.remove_dead()
 
-        if self.turns % settings.spawn_every == 0:
-            self.clear_spawn_points()
-            self.spawn_robot_batch()
+        if not self._unit_testing:
+            if self.turns % settings.spawn_every == 0:
+                self.clear_spawn_points()
+                self.spawn_robot_batch()
 
-        if self._record:
-            round_history = self.make_history(actions)
-            for i in (0, 1):
-                self.history[i].append(round_history[i])
+            if self._record:
+                round_history = self.make_history(actions)
+                for i in (0, 1):
+                    self.history[i].append(round_history[i])
 
         self.turns += 1
 

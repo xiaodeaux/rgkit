@@ -22,7 +22,7 @@ usage: python mapeditor.py [<starting map file>]
 I made this map editor to use for myself. Therefore, it might not seem
 very user-friendly, but it's not that hard. There are just a bunch of
 keyboard shortcuts to use.
-t
+
 Game-related colors
 ===================
 [a] paint black (obstacle)
