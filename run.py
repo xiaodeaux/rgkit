@@ -24,4 +24,5 @@ if __name__ == '__main__':
     g = game.Game(*players, record_turns=True)
     for i in range(settings.max_turns):
         g.run_turn()
+    render.Render(g, game.settings)
     print g.history
