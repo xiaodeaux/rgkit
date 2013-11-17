@@ -1,6 +1,6 @@
-import game
 import unittest
-from settings import settings
+from .. import game
+from ..settings import settings
 
 
 
