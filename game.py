@@ -248,10 +248,12 @@ class Game:
 
                 old_loc = robot.location
                 try:
+                    # a temporary fix until I figure out what's causing the recursions
+                    sys.setrecursionlimit(settings.board_size ** 2)
                     robot.issue_command(action, actions)
+                    sys.setrecursionlimit(1000)
                 except Exception:
                     traceback.print_exc(file=sys.stdout)
-                    robot.issue_command(['guard'], actions)
                     actions[robot] = ['guard']
                 if robot.location != old_loc:
                     loc_shifts[old_loc] = robot.location
