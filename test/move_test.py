@@ -71,3 +71,17 @@ class TestMove(base.BaseTestCase):
         # they shouldn't have swapped
         self.assertEqual(bot1.player_id, 0)
         self.assertEqual(bot2.player_id, 1)
+
+    def test_circle(self):
+        [bot1, bot2], [bot3, bot4] = self.simulate(
+            [RobotMoveInCircle, RobotMoveInCircle],
+            [(9, 9), (8, 8)], [(8, 9), (9, 8)],
+            [(8, 9), (9, 8)], [(8, 8), (9, 9)])
+
+        for r in self._game._robots:
+            print r.location
+
+        self.assertEqual(bot1.player_id, 0)
+        self.assertEqual(bot2.player_id, 0)
+        self.assertEqual(bot3.player_id, 1)
+        self.assertEqual(bot4.player_id, 1)

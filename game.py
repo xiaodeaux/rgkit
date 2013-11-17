@@ -6,7 +6,7 @@ import traceback
 import imp
 import json
 ###
-from settings import settings
+from settings import settings, AttrDict
 import rg
 import defaultrobots
 
@@ -197,7 +197,9 @@ class Game:
         return {
             'robots': dict((
                 y.location,
-                dict((x, getattr(y, x)) for x in settings.exposed_properties)
+                AttrDict(
+                    dict((x, getattr(y, x)) for x in settings.exposed_properties)
+                )
             ) for y in self._robots),
             'turn': self.turns,
         }
