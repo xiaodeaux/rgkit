@@ -88,9 +88,6 @@ class Render:
                 red, green, turns, max_turns))
 
     def callback(self):
-        if self._game.turns < self._settings.max_turns:
-            self._game.run_turn()
-
         if not self._paused:
             self.change_turn(1)
 

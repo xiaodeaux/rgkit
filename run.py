@@ -3,6 +3,7 @@ import game
 import render
 import sys
 import os
+from settings import settings
 
 def make_player(fname):
     return game.Player(open(fname).read())
@@ -21,5 +22,10 @@ if __name__ == '__main__':
 
     map_data = ast.literal_eval(open(map_name).read())
     game.init_settings(map_data)
+
+    for i in range(settings.max_turns):
+        print (' running turn %d ' % (g.turns + 1)).center(70, '-')
+        g.run_turn()
+
     render.Render(g, game.settings)
     print g.history
