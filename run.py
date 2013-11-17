@@ -23,6 +23,7 @@ if __name__ == '__main__':
     players = [make_player(x) for x in sys.argv[1:3]]
     g = game.Game(*players, record_turns=True)
     for i in range(settings.max_turns):
+        print (' running turn %d ' % (g.turns + 1)).center(70, '-')
         g.run_turn()
     render.Render(g, game.settings)
     print g.history
