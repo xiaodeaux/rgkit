@@ -98,16 +98,20 @@ class InternalRobot:
         if params[0] == loc:
             if not move_exclude:
                 return True
-            if robot not in move_exclude:
-                return True
+            return robot not in move_exclude
         elif robot.location == loc:
-            move_exclude = (move_exclude or []) + [robot]
+            move_exclude.add(robot)
             return (len(self.get_collisions(params[0], actions, move_exclude)) > 0)
         return False
 
     def get_collisions(self, loc, action_table, move_exclude=None):
+        if move_exclude is None:
+            move_exclude = set()
+
         collisions = []
         nearby_robots = self.get_robots_around(loc)
+        nearby_robots = set(nearby_robots) - move_exclude
+
         for robot in nearby_robots:
             cmd, params = InternalRobot.parse_command(action_table[robot])
             if self.is_collision(loc, robot, cmd, params, action_table, move_exclude):
