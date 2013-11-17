@@ -1,3 +1,17 @@
+robot_suicide = """
+class Robot:
+    def act(self, game):
+        return ['suicide']
+"""
+
+
+robot_guard = """
+class Robot:
+    def act(self, game):
+        return ['guard']
+"""
+
+
 robot_move_right = """
 class Robot:
     def act(self, game):
