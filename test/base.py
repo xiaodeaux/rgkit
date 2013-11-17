@@ -12,7 +12,7 @@ class BaseTestCase(unittest.TestCase):
         players = [game.Player(robots={'Robot': robot()}) for robot in robots]
         map['start1'], map['start2'] = locs1, locs2
         game.init_settings(map)
-        self._game = game.Game(*players)
+        self._game = game.Game(*players, unit_testing=True)
         self._game.run_turn()
 
         return [[self._game.robot_at_loc(loc) for loc in locs]

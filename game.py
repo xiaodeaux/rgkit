@@ -85,7 +85,7 @@ class InternalRobot:
         locs_around.append(loc)
 
         robots = [self.field[x] for x in locs_around]
-        return [x for x in robots if x is not None]
+        return [x for x in robots if x not in (None, self)]
 
     def movable_loc(self, loc):
         good_around = rg.locs_around(self.location,
@@ -93,12 +93,12 @@ class InternalRobot:
         return loc in good_around
 
     def is_collision(self, loc, robot, cmd, params, actions, move_exclude):
-        if robot == self:
-            return False
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
-            if (not move_exclude) or (len(move_exclude) == 1) or (robot not in move_exclude):
+            if not move_exclude:
+                return True
+            if robot not in move_exclude:
                 return True
         elif robot.location == loc:
             move_exclude = (move_exclude or []) + [robot]
@@ -202,6 +202,15 @@ class Game:
             'turn': self.turns,
         }
 
+    def adjust_field(self, loc_shifts):
+        exclude = set([])
+        for old, new in loc_shifts.iteritems():
+            exclude.add(new)
+            self._field[new] = self._field[old]
+        for old in loc_shifts:
+            if old not in exclude:
+                self._field[old] = None
+
     def make_robots_act(self):
         global settings
 
@@ -223,8 +232,11 @@ class Game:
             actions[robot] = next_action
 
         commands = list(settings.valid_commands)
+        commands.remove('guard')
         commands.remove('move')
         commands.insert(0, 'move')
+
+        loc_shifts = {}
 
         for cmd in commands:
             for robot, action in actions.iteritems():
@@ -239,13 +251,13 @@ class Game:
                     robot.issue_command(['guard'], actions)
                     actions[robot] = ['guard']
                 if robot.location != old_loc:
-                    self._field[old_loc] = None
-                    self._field[robot.location] = robot
+                    loc_shifts[old_loc] = robot.location
+
+        self.adjust_field(loc_shifts)
         return actions
 
     def robot_at_loc(self, loc):
-        robot = self._field[loc]
-        return robot
+        return self._field[loc]
 
     def spawn_robot(self, player_id, loc, robot_type):
         if self.robot_at_loc(loc) is not None:
