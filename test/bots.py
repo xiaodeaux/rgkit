@@ -1,40 +1,29 @@
-robot_suicide = """
-class Robot:
+class RobotSuicide:
     def act(self, game):
         return ['suicide']
-"""
 
 
-robot_guard = """
-class Robot:
+class RobotGuard:
     def act(self, game):
         return ['guard']
-"""
 
 
-robot_move_right = """
-class Robot:
+class RobotMoveRight:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1])]
-"""
 
 
-robot_move_left = """
-class Robot:
+class RobotMoveLeft:
     def act(self, game):
         return ['move', (self.location[0] - 1, self.location[1])]
-"""
 
 
-robot_move_invalid = """
-class Robot:
+class RobotMoveInvalid:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1] + 1)]
-"""
 
 
-robot_move_in_circle = """
-class Robot:
+class RobotMoveInCircle:
     def act(self, game):
         from operator import add
 
@@ -44,11 +33,9 @@ class Robot:
                          moves[self.location[1] % 2][self.location[0] % 2]))
 
         return ['move', dest]
-"""
 
 
-robot_move_in_circle_counterclock = """
-class Robot:
+class RobotMoveInCircleCounterclock:
     def act(self, game):
         from operator import add
 
@@ -58,11 +45,9 @@ class Robot:
                          moves[self.location[1] % 2][self.location[0] % 2]))
 
         return ['move', dest]
-"""
 
 
-robot_move_in_circle_collision = """
-class Robot:
+class RobotMoveInCircleCollision:
     def act(self, game):
         from operator import add
 
@@ -72,4 +57,3 @@ class Robot:
                          moves[self.location[1] % 2][self.location[0] % 2]))
 
         return ['move', dest]
-"""

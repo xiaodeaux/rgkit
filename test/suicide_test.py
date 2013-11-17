@@ -8,7 +8,7 @@ from bots import *
 class SuicideTest(base.BaseTestCase):
     def test_basic_suicide(self):
         _, [bot2] = self.simulate(
-            [robot_suicide, robot_guard],
+            [RobotSuicide, RobotGuard],
             [(10, 10)], [],
             [(11, 10)], [(11, 10)])
 
@@ -17,7 +17,7 @@ class SuicideTest(base.BaseTestCase):
 
     def test_move_out_of_suicide_range(self):
         _, [bot2] = self.simulate(
-            [robot_suicide, robot_move_right],
+            [RobotSuicide, RobotMoveRight],
             [(10, 10)], [],
             [(11, 10)], [(12, 10)])
 
@@ -26,7 +26,7 @@ class SuicideTest(base.BaseTestCase):
 
     def test_move_into_suicide_range(self):
         _, [bot2] = self.simulate(
-            [robot_suicide, robot_move_left],
+            [RobotSuicide, RobotMoveLeft],
             [(10, 10)], [],
             [(12, 10)], [(11, 10)])
 
@@ -35,7 +35,7 @@ class SuicideTest(base.BaseTestCase):
 
     def test_try_move_into_into_suicide_range(self):
         _, [bot2, bot3] = self.simulate(
-            [robot_suicide, robot_move_left],
+            [RobotSuicide, RobotMoveLeft],
             [(10, 10)], [],
             [(11, 10), (12, 10)], [(11, 10), (12, 10)])
 

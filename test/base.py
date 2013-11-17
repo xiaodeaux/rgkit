@@ -8,8 +8,8 @@ map = {'spawn': default_spawn, 'obstacle': default_obstacle}
 
 
 class BaseTestCase(unittest.TestCase):
-    def simulate(self, codes, locs1, next_locs1, locs2, next_locs2):
-        players = [game.Player(code) for code in codes]
+    def simulate(self, robots, locs1, next_locs1, locs2, next_locs2):
+        players = [game.Player(robots={'Robot': robot()}) for robot in robots]
         map['start1'], map['start2'] = locs1, locs2
         game.init_settings(map)
         self._game = game.Game(*players)

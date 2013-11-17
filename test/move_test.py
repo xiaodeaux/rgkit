@@ -7,7 +7,7 @@ from bots import *
 class TestMove(base.BaseTestCase):
     def test_move_no_collision(self):
         [bot1], [bot2] = self.simulate(
-            [robot_move_right, robot_move_left],
+            [RobotMoveRight, RobotMoveLeft],
             [(10, 10)], [(11, 10)],
             [(8, 10)], [(7, 10)])
 
@@ -18,7 +18,7 @@ class TestMove(base.BaseTestCase):
 
     def test_basic_collision(self):
         [bot1], [bot2] = self.simulate(
-            [robot_move_right, robot_move_left],
+            [RobotMoveRight, RobotMoveLeft],
             [(8, 10)], [(8, 10)],
             [(10, 10)], [(10, 10)])
 
@@ -27,7 +27,7 @@ class TestMove(base.BaseTestCase):
 
     def test_invalid_move(self):
         [bot1], [bot2] = self.simulate(
-            [robot_move_invalid, robot_move_invalid],
+            [RobotMoveInvalid, RobotMoveInvalid],
             [(10, 10)], [(10, 10)],
             [(8, 10)], [(8, 10)])
 
@@ -36,7 +36,7 @@ class TestMove(base.BaseTestCase):
 
     def test_move_train(self):
         [bot1, bot2, bot3], _ = self.simulate(
-            [robot_move_left, robot_move_left],
+            [RobotMoveLeft, RobotMoveLeft],
             [(10, 10), (11, 10), (12, 10)], [(9, 10), (10, 10), (11, 10)],
             [], [])
 
@@ -47,7 +47,7 @@ class TestMove(base.BaseTestCase):
 
     def test_train_collision(self):
         [bot1, bot2, bot3], [bot4] = self.simulate(
-            [robot_move_left, robot_move_right],
+            [RobotMoveLeft, RobotMoveRight],
             [(10, 10), (11, 10), (12, 10)], [(10, 10), (11, 10), (12, 10)],
             [(8, 10)], [(8, 10)])
 
