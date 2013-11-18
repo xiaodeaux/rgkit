@@ -4,9 +4,8 @@ import os
 import ast
 import argparse
 
-import game
-import render
-from settings import settings
+from rgkit import game, render
+from rgkit.settings import settings
 
 parser = argparse.ArgumentParser(description="Robot game execution script.")
 parser.add_argument("usercode1",

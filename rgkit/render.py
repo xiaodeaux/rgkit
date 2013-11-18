@@ -1,5 +1,6 @@
 import Tkinter
-import game
+
+from rgkit import game
 
 class Render:
     def __init__(self, game_inst, settings, block_size=20):
