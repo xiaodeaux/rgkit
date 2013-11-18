@@ -151,18 +151,15 @@ class InternalRobot:
     def call_attack(self, loc, action_table, damage=None):
         global settings
 
-        loc = tuple(map(int, loc))
         damage = int(damage or random.randint(*settings.attack_range))
-        collisions = self.get_collisions(loc, action_table)
 
-        for robot, action in action_table.iteritems():
-            cmd, params = InternalRobot.parse_command(action)
-            if robot.player_id == self.player_id:
-                continue
-            if robot.location != loc:
-                continue
-            InternalRobot.damage_robot(robot,
-                damage if cmd != 'guard' else damage / 2)
+        robot = self.field[loc]
+        if not robot or robot.player_id == self.player_id:
+            return
+
+        cmd, params = InternalRobot.parse_command(action_table[robot])
+        InternalRobot.damage_robot(robot,
+                                   damage if cmd != 'guard' else damage / 2)
 
     def call_suicide(self, action_table):
         self.hp = 0
