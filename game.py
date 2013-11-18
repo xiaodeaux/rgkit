@@ -105,7 +105,7 @@ class InternalRobot:
                 return True
             return robot not in move_exclude
         elif robot.location == loc:
-            move_exclude.add(robot)
+            move_exclude = move_exclude | set([robot])
             return (len(self.get_collisions(params[0], actions, move_exclude)) > 0)
         return False
 
