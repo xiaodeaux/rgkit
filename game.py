@@ -98,6 +98,8 @@ class InternalRobot:
         return loc in good_around
 
     def is_collision(self, loc, robot, cmd, params, actions, move_exclude):
+        if cmd == 'suicide':
+            return False
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
