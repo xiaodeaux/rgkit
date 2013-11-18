@@ -101,10 +101,10 @@ class InternalRobot:
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
-            if not move_exclude:
-                return True
             return robot not in move_exclude
         elif robot.location == loc:
+            if params[0] == self.location:
+                return True
             move_exclude = move_exclude | set([robot])
             return (len(self.get_collisions(params[0], actions, move_exclude)) > 0)
         return False
