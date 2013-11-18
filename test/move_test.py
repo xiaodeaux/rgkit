@@ -39,13 +39,6 @@ class TestMove(base.BaseTestCase):
             [(10, 10), (11, 10), (12, 10)], [(9, 10), (10, 10), (11, 10)],
             [], [])
 
-        print bot1, bot1.location
-        print bot2, bot2.location
-        print bot3
-
-        for r in self._game._robots:
-            print r.location
-
         assert(not self._game.robot_at_loc((12, 10)))
         assert(bot1)
         assert(bot2)
@@ -78,9 +71,6 @@ class TestMove(base.BaseTestCase):
             [(9, 9), (8, 8)], [(9, 9), (8, 8)],
             [(8, 9), (9, 8)], [(8, 9), (9, 8)])
 
-        for r in self._game._robots:
-            print r.location
-
         self.assertEqual(bot1.player_id, 0)
         self.assertEqual(bot2.player_id, 0)
         self.assertEqual(bot3.player_id, 1)
@@ -91,9 +81,6 @@ class TestMove(base.BaseTestCase):
             [RobotMoveInCircle, RobotMoveUp],
             [(12, 6), (13, 6)], [(12, 6), (13, 6)],
             [(13, 7)], [(13, 7)])
-
-        for r in self._game._robots:
-            print r.location
 
         self.assertEqual(bot1.player_id, 0)
         self.assertEqual(bot2.player_id, 0)

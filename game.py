@@ -55,6 +55,11 @@ class InternalRobot:
         self.player_id = player_id
         self.field = field
         self.robot_type = robot_type
+
+    def __repr__(self):
+        return '<%s: player: %d, hp: %d, type: %s>' % (
+            self.location, self.player_id, self.hp, self.robot_type
+        )
         
     @staticmethod
     def parse_command(action):
