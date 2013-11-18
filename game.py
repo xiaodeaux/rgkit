@@ -208,16 +208,6 @@ class Game:
             'turn': self.turns,
         }
 
-    def adjust_field(self, loc_shifts):
-        new_robots = {}
-
-        for old, new in loc_shifts.iteritems():
-            new_robots[new] = self._field[old]
-        for old in loc_shifts:
-            self._field[old] = None
-        for loc, robot in new_robots.iteritems():
-            self._field[loc] = robot
-
     def make_robots_act(self):
         global settings
 
@@ -243,8 +233,6 @@ class Game:
         commands.remove('move')
         commands.insert(0, 'move')
 
-        loc_shifts = {}
-
         for cmd in commands:
             for robot, action in actions.iteritems():
                 if action[0] != cmd:
@@ -260,9 +248,10 @@ class Game:
                     traceback.print_exc(file=sys.stdout)
                     actions[robot] = ['guard']
                 if robot.location != old_loc:
-                    loc_shifts[old_loc] = robot.location
+                    if self._field[old_loc] is robot:
+                        self._field[old_loc] = None
+                    self._field[robot.location] = robot
 
-        self.adjust_field(loc_shifts)
         return actions
 
     def robot_at_loc(self, loc):

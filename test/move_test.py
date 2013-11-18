@@ -85,3 +85,16 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot2.player_id, 0)
         self.assertEqual(bot3.player_id, 1)
         self.assertEqual(bot4.player_id, 1)
+
+    def test_infinite_recursion(self):
+        [bot1, bot2], [bot3] = self.simulate(
+            [RobotMoveInCircle, RobotMoveUp],
+            [(12, 6), (13, 6)], [(12, 6), (13, 6)],
+            [(13, 7)], [(13, 7)])
+
+        for r in self._game._robots:
+            print r.location
+
+        self.assertEqual(bot1.player_id, 0)
+        self.assertEqual(bot2.player_id, 0)
+        self.assertEqual(bot3.player_id, 1)
