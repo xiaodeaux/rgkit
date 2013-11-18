@@ -33,7 +33,7 @@ class SuicideTest(base.BaseTestCase):
         assert(not self._game.robot_at_loc((10, 10)))
         self.assertEqual(bot2.hp, settings['robot_hp'] - settings['suicide_damage'])
 
-    def test_try_move_into_into_suicide_range(self):
+    def test_collide_and_stay_out_of_suicide_range(self):
         _, [bot2, bot3] = self.simulate(
             [RobotSuicide, RobotMoveLeft],
             [(10, 10)], [],
