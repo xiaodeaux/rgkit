@@ -88,3 +88,14 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot1.player_id, 0)
         self.assertEqual(bot2.player_id, 0)
         self.assertEqual(bot3.player_id, 1)
+
+    def test_overlapping_from_collision(self):
+        [bot1, bot2], [bot3, bot4] = self.simulate(
+            [RobotMoveRight, RobotMoveUp],
+            [(9, 10), (10, 10)], [(9, 10), (10, 10)],
+            [(11, 11), (11, 12)], [(11, 11), (11, 12)])
+
+        assert(bot1)
+        assert(bot2)
+        assert(bot3)
+        assert(bot4)
