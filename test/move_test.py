@@ -24,7 +24,7 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot1.hp, settings['robot_hp'] - settings['collision_damage'])
         self.assertEqual(bot2.hp, settings['robot_hp'] - settings['collision_damage'])
 
-    def test_invalid_move(self):
+    def test_try_invalid_move(self):
         [bot1], [bot2] = self.simulate(
             [RobotMoveInvalid, RobotMoveInvalid],
             [(10, 10)], [(10, 10)],
@@ -62,7 +62,7 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot3.hp, settings['robot_hp'])
         self.assertEqual(bot4.hp, settings['robot_hp'] - settings['collision_damage'])
         
-    def test_swap(self):
+    def test_try_swap(self):
         [bot1], [bot2] = self.simulate(
             [RobotMoveLeft, RobotMoveRight],
             [(9, 9)], [(9, 9)],
@@ -72,11 +72,11 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot1.player_id, 0)
         self.assertEqual(bot2.player_id, 1)
 
-    def test_circle(self):
+    def test_try_move_in_circle(self):
         [bot1, bot2], [bot3, bot4] = self.simulate(
             [RobotMoveInCircle, RobotMoveInCircle],
-            [(9, 9), (8, 8)], [(8, 9), (9, 8)],
-            [(8, 9), (9, 8)], [(8, 8), (9, 9)])
+            [(9, 9), (8, 8)], [(9, 9), (8, 8)],
+            [(8, 9), (9, 8)], [(8, 9), (9, 8)])
 
         for r in self._game._robots:
             print r.location
