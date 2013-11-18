@@ -1,3 +1,4 @@
+import pprint
 import unittest
 from .. import game
 
@@ -14,6 +15,8 @@ class BaseTestCase(unittest.TestCase):
         game.init_settings(map)
         self._game = game.Game(*players, unit_testing=True)
         self._game.run_turn()
+
+        pprint.pprint(self._game._robots)
 
         return [[self._game.robot_at_loc(loc) for loc in locs]
                 for locs in (next_locs1, next_locs2)]

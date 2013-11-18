@@ -28,6 +28,14 @@ class RobotMoveInvalid:
         return ['move', (self.location[0] + 1, self.location[1] + 1)]
 
 
+class RobotMoveRightAndGuard:
+    def act(self, game):
+        if (self.location[0] % 2 == 0):
+            return ['move', (self.location[0] + 1, self.location[1])]
+        else:
+            return ['guard']
+
+
 class RobotMoveInCircle:
     def act(self, game):
         from operator import add

@@ -55,6 +55,11 @@ class InternalRobot:
         self.player_id = player_id
         self.field = field
         self.robot_type = robot_type
+
+    def __repr__(self):
+        return '<%s: player: %d, hp: %d, type: %s>' % (
+            self.location, self.player_id, self.hp, self.robot_type
+        )
         
     @staticmethod
     def parse_command(action):
@@ -93,14 +98,16 @@ class InternalRobot:
         return loc in good_around
 
     def is_collision(self, loc, robot, cmd, params, actions, move_exclude):
+        if cmd == 'suicide':
+            return False
         if cmd != 'move':
             return robot.location == loc
         if params[0] == loc:
-            if not move_exclude:
-                return True
             return robot not in move_exclude
         elif robot.location == loc:
-            move_exclude.add(robot)
+            if params[0] == self.location:
+                return True
+            move_exclude = move_exclude | set([robot])
             return (len(self.get_collisions(params[0], actions, move_exclude)) > 0)
         return False
 
