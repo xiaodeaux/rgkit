@@ -18,6 +18,11 @@ class RobotMoveLeft:
         return ['move', (self.location[0] - 1, self.location[1])]
 
 
+class RobotMoveUp:
+    def act(self, game):
+        return ['move', (self.location[0], self.location[1] - 1)]
+
+
 class RobotMoveInvalid:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1] + 1)]
