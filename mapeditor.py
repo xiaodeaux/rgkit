@@ -1,6 +1,9 @@
+#!python
+
 import ast
 import Tkinter
 import sys
+
 from settings import settings
 
 BLOCKSIZE = 20
