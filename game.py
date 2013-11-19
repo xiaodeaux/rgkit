@@ -185,7 +185,6 @@ class Game:
         self._robots = []
         self._field = Field(settings.board_size)
         self._unit_testing = unit_testing
-        self._robot_state = {}
 
         self._record = record_turns
         if self._record:
@@ -219,12 +218,7 @@ class Game:
         actions = {}
 
         for robot in self._robots:
-            if robot not in self._robot_state:
-                self._robot_state[robot] = {}
-
             user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
-            user_robot.__dict__ = self._robot_state[robot]
-
             for prop in settings.exposed_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
 
@@ -303,16 +297,12 @@ class Game:
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
             if self._field[loc] is not None:
-                if self._field[loc] in self._robot_state:
-                    del self._robot_state[self._field[loc]]
                 self._robots.remove(self._field[loc])
                 self._field[loc] = None
 
     def remove_dead(self):
         to_remove = [x for x in self._robots if x.hp <= 0]
         for robot in to_remove:
-            if robot in self._robot_state:
-                del self._robot_state[robot]
             self._robots.remove(robot)
             if self._field[robot.location] == robot:
                 self._field[robot.location] = None
