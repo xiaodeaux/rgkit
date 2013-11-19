@@ -2,21 +2,24 @@ class RobotSuicide:
     def act(self, game):
         return ['suicide']
 
-
 class RobotGuard:
     def act(self, game):
         return ['guard']
-
 
 class RobotMoveRight:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1])]
 
-
 class RobotMoveLeft:
     def act(self, game):
         return ['move', (self.location[0] - 1, self.location[1])]
 
+class RobotSaveState(RobotMoveLeft):
+    def act(self, game):
+        if hasattr(self, 'do_not_move') and self.do_not_move:
+            return ['guard']
+        self.do_not_move = True
+        return RobotMoveLeft.act(self, game)
 
 class RobotMoveUp:
     def act(self, game):

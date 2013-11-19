@@ -10,12 +10,14 @@ map = {'spawn': default_spawn, 'obstacle': default_obstacle}
 
 
 class BaseTestCase(unittest.TestCase):
-    def simulate(self, robots, locs1, next_locs1, locs2, next_locs2):
+    def simulate(self, robots, locs1, next_locs1, locs2, next_locs2, turns=1):
         players = [game.Player(robots={'Robot': robot()}) for robot in robots]
         map['start1'], map['start2'] = locs1, locs2
         game.init_settings(map)
         self._game = game.Game(*players, unit_testing=True)
-        self._game.run_turn()
+        
+        for i in range(turns):
+            self._game.run_turn()
 
         pprint.pprint(self._game._robots)
 

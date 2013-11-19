@@ -1,5 +1,3 @@
-
-
 import base
 
 from rgkit import game
@@ -99,3 +97,9 @@ class TestMove(base.BaseTestCase):
         assert(bot2)
         assert(bot3)
         assert(bot4)
+
+    def test_save_robot_state(self):
+        [bot1], _ = self.simulate(
+            [RobotSaveState, RobotSaveState],
+            [(9, 9)], [(8, 9)], [], [], turns=2)
+        assert(bot1)
