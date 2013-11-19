@@ -1,14 +1,12 @@
 import inspect
 import random
-import os
 import sys
 import traceback
 import imp
-import json
 ###
-from settings import settings, AttrDict
-import rg
-import defaultrobots
+from rgkit import rg, defaultrobots
+from rgkit.settings import settings, AttrDict
+
 
 def init_settings(map_data):
     global settings

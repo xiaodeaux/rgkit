@@ -1,7 +1,10 @@
-import base
+
 import unittest
-from .. import game
-from ..settings import settings
+
+import base
+
+from rgkit import game
+from rgkit.settings import settings
 from bots import *
 
 

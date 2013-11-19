@@ -1,6 +1,9 @@
+
+
 import base
-from .. import game
-from ..settings import settings
+
+from rgkit import game
+from rgkit.settings import settings
 from bots import *
 
 class TestMove(base.BaseTestCase):
