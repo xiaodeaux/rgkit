@@ -1,4 +1,4 @@
-from rgkit.settings import settings
+from settings import settings
 
 class Commander:
     def spawn(self, game):

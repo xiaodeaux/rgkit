@@ -4,8 +4,9 @@ import sys
 import traceback
 import imp
 ###
-from rgkit import rg, defaultrobots
-from rgkit.settings import settings, AttrDict
+import rg
+import defaultrobots
+from settings import settings, AttrDict
 
 
 def init_settings(map_data):

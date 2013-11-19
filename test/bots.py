@@ -73,3 +73,4 @@ class RobotMoveInCircleCollision:
                          moves[self.location[1] % 2][self.location[0] % 2]))
 
         return ['move', dest]
+

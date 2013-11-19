@@ -103,3 +103,4 @@ class TestMove(base.BaseTestCase):
             [RobotSaveState, RobotSaveState],
             [(9, 9)], [(8, 9)], [], [], turns=2)
         assert(bot1)
+

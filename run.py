@@ -1,11 +1,11 @@
 #!python
-
 import os
 import ast
 import argparse
-
-from rgkit import game, render
-from rgkit.settings import settings
+###
+import game
+import render
+from settings import settings
 
 parser = argparse.ArgumentParser(description="Robot game execution script.")
 parser.add_argument("usercode1",
@@ -36,4 +36,6 @@ if __name__ == '__main__':
         g.run_turn()
     if not args.headless:
         render.Render(g, game.settings)
-    print g.history
+        print g.history
+    else:
+        print g.get_scores()
