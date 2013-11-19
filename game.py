@@ -48,10 +48,11 @@ class Player:
         return self._cache[class_name]
 
 class InternalRobot:
-    def __init__(self, location, hp, player_id, field, robot_type):
+    def __init__(self, location, hp, player_id, robot_id, field, robot_type):
         self.location = location
         self.hp = hp
         self.player_id = player_id
+        self.robot_id = robot_id
         self.field = field
         self.robot_type = robot_type
         self.state = AttrDict({})
@@ -186,12 +187,18 @@ class Game:
         self._robots = []
         self._field = Field(settings.board_size)
         self._unit_testing = unit_testing
+        self._id_inc = 0
 
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
 
         self.spawn_starting()
+
+    def get_robot_id(self):
+        ret = self._id_inc
+        self._id_inc += 1
+        return ret
 
     def spawn_starting(self):
         global settings
@@ -205,31 +212,33 @@ class Game:
         return AttrDict({
             'robots': dict((
                 y.location,
-                AttrDict(
-                    dict((x, getattr(y, x)) for x in settings.exposed_properties)
-                )
+                AttrDict(dict(
+                    (x, getattr(y, x)) for x in
+                    settings.exposed_properties + settings.player_only_properties
+                ))
             ) for y in self._robots),
             'turn': self.turns,
         })
 
-    def hide_enemy_state(self, game_info):
+    def personalize_game_info(self, game_info):
         game_info_copies = [AttrDict(game_info) for i in range(2)]
         for i in range(2):
             for loc, robot in game_info_copies[i].robots.iteritems():
                 if robot.player_id != i:
-                    del robot['state']
+                    for property in settings.player_only_properties:
+                        del robot[property]
         return game_info_copies
 
     def make_robots_act(self):
         global settings
 
         game_info = self.build_game_info()
-        game_info_copies = self.hide_enemy_state(game_info)
+        game_info_copies = self.personalize_game_info(game_info)
         actions = {}
 
         for robot in self._robots:
             user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
-            for prop in settings.exposed_properties:
+            for prop in settings.exposed_properties + settings.player_only_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
 
             try:
@@ -270,8 +279,8 @@ class Game:
     def spawn_robot(self, player_id, loc, robot_type):
         if self.robot_at_loc(loc) is not None:
             return False
-
-        robot = InternalRobot(loc, settings.robot_hp, player_id, self._field, robot_type)
+        robot_id = self.get_robot_id()
+        robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field, robot_type)
         self._robots.append(robot)
         self._field[loc] = robot
 

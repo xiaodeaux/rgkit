@@ -15,10 +15,12 @@ class RobotMoveLeft:
         return ['move', (self.location[0] - 1, self.location[1])]
 
 class RobotSaveState(RobotMoveLeft):
+    do_not_move = {}
+
     def act(self, game):
-        if hasattr(self.state, 'do_not_move') and self.state.do_not_move:
+        if self.robot_id in RobotSaveState.do_not_move:
             return ['guard']
-        self.state.do_not_move = True
+        RobotSaveState.do_not_move[self.robot_id] = True
         return RobotMoveLeft.act(self, game)
 
 class RobotMoveUp:
