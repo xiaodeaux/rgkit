@@ -127,8 +127,6 @@ class InternalRobot:
 
     @staticmethod
     def damage_robot(robot, damage):
-        if robot.robot_type == 'TankRobot':
-            damage /= 2
         robot.hp -= int(damage)
 
     def call_move(self, loc, action_table):
