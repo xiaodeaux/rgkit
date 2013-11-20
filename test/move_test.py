@@ -55,7 +55,7 @@ class TestMove(base.BaseTestCase):
         self.assertEqual(bot2.hp, settings['robot_hp'])
         self.assertEqual(bot3.hp, settings['robot_hp'])
         self.assertEqual(bot4.hp, settings['robot_hp'] - settings['collision_damage'])
-        
+
     def test_try_swap(self):
         [bot1], [bot2] = self.simulate(
             [RobotMoveLeft, RobotMoveRight],
@@ -103,4 +103,3 @@ class TestMove(base.BaseTestCase):
             [RobotSaveState, RobotSaveState],
             [(9, 9)], [(8, 9)], [], [], turns=2)
         assert(bot1)
-

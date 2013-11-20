@@ -8,10 +8,10 @@ settings = {
     'collision_damage': 5,
     'suicide_damage': 15,
     'max_turns': 100,
-    
+
     # rendering
     'turn_interval': 100,
-    
+
     # rating systems
     'rating_range': 150,
     'default_rating': 1200,

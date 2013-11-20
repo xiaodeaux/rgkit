@@ -19,7 +19,8 @@ class Render:
         self._win.pack()
 
         self.prepare_backdrop(self._win)
-        self._label = self._win.create_text(self._blocksize/2, self._winsize + self._blocksize/2,
+        self._label = self._win.create_text(
+            self._blocksize/2, self._winsize + self._blocksize/2,
             anchor='nw', font='TkFixedFont', fill='white')
 
         self.create_controls(self._win, width, height)
@@ -75,17 +76,18 @@ class Render:
             return
 
         self._colors[loc] = color
-        x, y = loc
-        self._win.create_rectangle(x * self._blocksize + 20, y * self._blocksize + 20,
-            x * self._blocksize + self._blocksize - 3 + 20, y * self._blocksize + self._blocksize - 3 + 20,
-            fill=color, width=0)
+        color, hp = color
+        x, y = [p * self._blocksize + 20 for p in loc]
+        self._win.create_rectangle(x, y, x + self._blocksize - 3, y + self._blocksize - 3, fill=color, width=0)
+        if hp:
+            self._win.create_text(x + 8, y + 8, text=hp)
 
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
-        self._win.itemconfig(self._label,
-            text='Red: %d | Green: %d | Turn: %d/%d' % (
-                red, green, turns, max_turns))
+        self._win.itemconfig(
+            self._label, text='Red: %d | Green: %d | Turn: %d/%d' %
+            (red, green, turns, max_turns))
 
     def callback(self):
         if not self._paused:
@@ -99,15 +101,15 @@ class Render:
 
     def determine_color(self, loc):
         if loc in self._settings.obstacles:
-            return '#222'
+            return '#222', None
 
         for index, color in enumerate(('red', 'green')):
             for robot in self._game.history[index][self._turn - 1]:
                 if robot[0] == loc:
                     colorhex = 5 + robot[1] / 5
-                    return ('#%X00' if index == 0 else '#0%X0') % colorhex
+                    return ('#%X00' if index == 0 else '#0%X0') % colorhex, robot[1]
 
-        return 'white'
+        return 'white', None
 
     def paint(self):
         for y in range(self._settings.board_size):
