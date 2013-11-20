@@ -28,7 +28,7 @@ class Render:
         self._turn = 1
         self._texts = []
         self._squares = {}
-        
+
         self.callback()
         self.update()
         self._win.mainloop()
@@ -53,13 +53,13 @@ class Render:
 
         def next():
             change_turn(+1)
-        
+
         def restart():
             change_turn((-self._turn)+1)
-            
+
         def pause():
             self.toggle_pause()
-            
+
         self._master.bind('<Left>', lambda e: prev())
         self._master.bind('<Right>', lambda e: next())
         self._master.bind('<space>', lambda e: pause())
@@ -92,17 +92,20 @@ class Render:
 
         self._colors[loc] = color
         x, y = loc
-        item = self._win.create_rectangle(x * self._blocksize + 20, y * self._blocksize + 20,
-            x * self._blocksize + self._blocksize - 3 + 20, y * self._blocksize + self._blocksize - 3 + 20,
+        item = self._win.create_rectangle(
+            x * self._blocksize + 20, y * self._blocksize + 20,
+            x * self._blocksize + self._blocksize - 3 + 20,
+            y * self._blocksize + self._blocksize - 3 + 20,
             fill=color, width=0)
         # Delete previous square on this location.
         if loc in self._squares:
             self._win.delete(self._squares.pop(loc))
         self._squares[loc] = item
-            
+
     def draw_text(self, loc, text, color=None):
         x, y = loc
-        item = self._win.create_text(x * self._blocksize + 30, y * self._blocksize + 25,
+        item = self._win.create_text(
+            x * self._blocksize + 30, y * self._blocksize + 25,
             text=text, fill=color)
         self._texts.append(item)
 
@@ -135,7 +138,7 @@ class Render:
             return ('#%X00' if color == 0 else '#0%X0') % colorhex
 
         return 'white'
-        
+
     def loc_robot_hp_color(self, loc):
         for index, color in enumerate(('red', 'green')):
             for robot in self._game.history[index][self._turn - 1]:
@@ -147,7 +150,7 @@ class Render:
         for item in self._texts:
             self._win.delete(item)
         self._texts = []
-        
+
         for y in range(self._settings.board_size):
             self.draw_text((y, 0), str(y), 'white')
             self.draw_text((0, y), str(y), 'white')
