@@ -20,7 +20,8 @@ class Render:
         self._win.pack()
 
         self.prepare_backdrop(self._win)
-        self._label = self._win.create_text(self._blocksize/2, self._winsize + self._blocksize/2,
+        self._label = self._win.create_text(
+            self._blocksize/2, self._winsize + self._blocksize/2,
             anchor='nw', font='TkFixedFont', fill='white')
 
         self.create_controls(self._win, width, height)
@@ -85,9 +86,9 @@ class Render:
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
-        self._win.itemconfig(self._label,
-            text='Red: %d | Green: %d | Turn: %d/%d' % (
-                red, green, turns, max_turns))
+        self._win.itemconfig(
+            self._label, text='Red: %d | Green: %d | Turn: %d/%d' %
+            (red, green, turns, max_turns))
 
     def callback(self):
         if not self._paused:

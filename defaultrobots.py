@@ -7,7 +7,7 @@ class Commander:
 class Robot:
     def act(self, game):
         return ['guard']
-    
+
 class TankRobot:
     def act(self, game):
         return ['guard']

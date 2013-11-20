@@ -1,4 +1,3 @@
-
 #!python
 
 import ast
@@ -113,7 +112,7 @@ class MapEditor:
     def click_handler(self, event):
         self._pressed = True
         self.paint_square(tk_event=event)
-    
+
     def move_handler(self, event):
         if self._pressed:
             self.paint_square(tk_event=event)
@@ -122,7 +121,7 @@ class MapEditor:
         self._pressed = False
 
     def paint_all(self):
-       for i, item in enumerate(self._rect_items):
+        for i, item in enumerate(self._rect_items):
             self.paint_square(item_id=i)
             self._canvas.itemconfigure(item, fill=self._current_color)
 
@@ -132,7 +131,7 @@ class MapEditor:
 
         map_data = ast.literal_eval(open(self._map_file).read())
 
-        label_mapping = dict((v,k) for k, v in color_mapping.values() if v is not None)
+        label_mapping = dict((v, k) for k, v in color_mapping.values() if v is not None)
 
         for label, color in label_mapping.iteritems():
             if label not in map_data:
