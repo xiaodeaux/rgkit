@@ -1,6 +1,5 @@
 # users will import rg to be able to use robot game functions
 from math import sqrt
-import operator
 
 settings = None
 
@@ -38,23 +37,24 @@ def memodict(f):
 def loc_types(loc):
     for i in range(2):
         if not (0 <= loc[i] < settings.board_size):
-            return ['invalid']
-    types = ['normal']
+            return {'invalid'}
+    types = {'normal'}
     if loc in settings.spawn_coords:
-        types.append('spawn')
+        types.add('spawn')
     if loc in settings.obstacles:
-        types.append('obstacle')
+        types.add('obstacle')
     return types
 
 @memodict
 def _locs_around(loc):
+    x, y = loc
     offsets = ((0, 1), (1, 0), (0, -1), (-1, 0))
-    return [tuple(map(operator.add, loc, o)) for o in offsets]
+    return [(x+dx, y+dy) for dx, dy in offsets]
 
 def locs_around(loc, filter_out=None):
-    filter_out = filter_out or []
+    filter_out = set(filter_out or [])
     return [loc for loc in _locs_around(loc) if
-            len(set(filter_out) & set(loc_types(loc))) == 0]
+            len(filter_out & loc_types(loc)) == 0]
 
 def toward(curr, dest):
     if curr == dest:
