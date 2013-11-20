@@ -54,6 +54,7 @@ class InternalRobot:
         self.player_id = player_id
         self.field = field
         self.robot_type = robot_type
+        self.state = AttrDict({})
 
     def __repr__(self):
         return '<%s: player: %d, hp: %d, type: %s>' % (

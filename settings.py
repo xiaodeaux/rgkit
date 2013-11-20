@@ -18,7 +18,7 @@ settings = {
 
     # user-scripting
     'max_usercode_time': 300,
-    'exposed_properties': ('location', 'hp', 'player_id'),
+    'exposed_properties': ('location', 'hp', 'player_id', 'state'),
     'valid_commands': ('move', 'attack', 'guard', 'suicide'),
     'user_obj_types': ('Commander', 'Robot', 'TankRobot'),
     'user_modules': ('numpy', 'euclid', 'random'),

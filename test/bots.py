@@ -16,9 +16,9 @@ class RobotMoveLeft:
 
 class RobotSaveState(RobotMoveLeft):
     def act(self, game):
-        if hasattr(self, 'do_not_move') and self.do_not_move:
+        if hasattr(self.state, 'do_not_move') and self.state.do_not_move:
             return ['guard']
-        self.do_not_move = True
+        self.state.do_not_move = True
         return RobotMoveLeft.act(self, game)
 
 class RobotMoveUp:
