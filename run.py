@@ -22,8 +22,6 @@ parser.add_argument("-c", "--count", type=int,
                     default=1,
                     help="Game count, default: 1")
 
-args = parser.parse_args()
-
 def make_player(fname):
     with open(fname) as player_code:
         return game.Player(player_code.read())
@@ -42,6 +40,8 @@ def play(players, print_info=True):
     return g.get_scores()
 
 if __name__ == '__main__':
+
+    args = parser.parse_args()
 
     map_name = os.path.join(args.map)
     map_data = ast.literal_eval(open(map_name).read())
