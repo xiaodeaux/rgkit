@@ -59,7 +59,7 @@ class InternalRobot:
         return '<%s: player: %d, hp: %d, type: %s>' % (
             self.location, self.player_id, self.hp, self.robot_type
         )
-        
+
     @staticmethod
     def parse_command(action):
         return (action[0], action[1:])
@@ -92,8 +92,8 @@ class InternalRobot:
         return [x for x in robots if x not in (None, self)]
 
     def movable_loc(self, loc):
-        good_around = rg.locs_around(self.location,
-            filter_out=['invalid', 'obstacle'])
+        good_around = rg.locs_around(
+            self.location, filter_out=['invalid', 'obstacle'])
         return loc in good_around
 
     def is_collision(self, loc, robot, cmd, params, actions, move_exclude):
@@ -170,11 +170,13 @@ class InternalRobot:
 class Field:
     def __init__(self, size):
         self.field = [[None for x in range(size)] for y in range(size)]
+
     def __getitem__(self, point):
         try:
             return self.field[point[1]][point[0]]
         except TypeError:
             print point[1], point[0]
+
     def __setitem__(self, point, v):
         self.field[point[1]][point[0]] = v
 
@@ -276,7 +278,6 @@ class Game:
             spawns = spawns[:settings.spawn_per_player]
         return spawns
 
-        
     def spawn_robot_batch(self):
         global settings
 
