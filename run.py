@@ -57,8 +57,6 @@ if __name__ == '__main__':
         print scores[-1]
 
     if args.count > 1:
-        p1won = reduce(lambda x, y: x + 1 if y[0] > y[1] else x,
-                       scores, 0)
-        p2won = reduce(lambda x, y: x + 1 if y[0] < y[1] else x,
-                       scores, 0)
+        p1won = sum(p1 > p2 for p1, p2 in scores)
+        p2won = sum(p2 > p1 for p1, p2 in scores)
         print [p1won, p2won, args.count - p1won - p2won]
