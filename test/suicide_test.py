@@ -1,11 +1,8 @@
-
-import unittest
-
 import base
-
+import unittest
+from bots import *
 from rgkit import game
 from rgkit.settings import settings
-from bots import *
 
 
 class SuicideTest(base.BaseTestCase):

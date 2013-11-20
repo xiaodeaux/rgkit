@@ -1,7 +1,6 @@
 import ast
 import pprint
 import unittest
-
 from rgkit import game
 
 

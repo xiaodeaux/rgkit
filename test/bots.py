@@ -25,11 +25,9 @@ class RobotMoveUp:
     def act(self, game):
         return ['move', (self.location[0], self.location[1] - 1)]
 
-
 class RobotMoveInvalid:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1] + 1)]
-
 
 class RobotMoveRightAndGuard:
     def act(self, game):
@@ -37,7 +35,6 @@ class RobotMoveRightAndGuard:
             return ['move', (self.location[0] + 1, self.location[1])]
         else:
             return ['guard']
-
 
 class RobotMoveInCircle:
     def act(self, game):
@@ -50,7 +47,6 @@ class RobotMoveInCircle:
 
         return ['move', dest]
 
-
 class RobotMoveInCircleCounterclock:
     def act(self, game):
         from operator import add
@@ -61,7 +57,6 @@ class RobotMoveInCircleCounterclock:
                          moves[self.location[1] % 2][self.location[0] % 2]))
 
         return ['move', dest]
-
 
 class RobotMoveInCircleCollision:
     def act(self, game):

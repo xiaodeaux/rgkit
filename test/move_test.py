@@ -1,8 +1,7 @@
 import base
-
+from bots import *
 from rgkit import game
 from rgkit.settings import settings
-from bots import *
 
 class TestMove(base.BaseTestCase):
     def test_move_no_collision(self):
@@ -97,9 +96,3 @@ class TestMove(base.BaseTestCase):
         assert(bot2)
         assert(bot3)
         assert(bot4)
-
-    def test_save_robot_state(self):
-        [bot1], _ = self.simulate(
-            [RobotSaveState, RobotSaveState],
-            [(9, 9)], [(8, 9)], [], [], turns=2)
-        assert(bot1)
