@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import os
 import ast
@@ -25,7 +25,8 @@ parser.add_argument("-c", "--count", type=int,
 args = parser.parse_args()
 
 def make_player(fname):
-    return game.Player(open(fname).read())
+    with open(fname) as player_code:
+        return game.Player(player_code.read())
 
 def play(players, print_info=True):
     g = game.Game(*players, record_turns=True)
@@ -46,8 +47,8 @@ if __name__ == '__main__':
     map_data = ast.literal_eval(open(map_name).read())
     game.init_settings(map_data)
 
-    players = [game.Player(open(args.usercode1).read()),
-               game.Player(open(args.usercode2).read())]
+    players = [make_player(args.usercode1),
+               make_player(args.usercode2)]
 
     scores = []
 
