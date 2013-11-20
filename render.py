@@ -8,7 +8,7 @@ class Render:
         self._winsize = block_size * self._settings.board_size + 40
         self._game = game_inst
         self._colors = game.Field(self._settings.board_size)
-        self._paused = True
+        self._paused = False
 
         self._master = Tkinter.Tk()
         self._master.title('robot game')
@@ -26,6 +26,9 @@ class Render:
         self.create_controls(self._win, width, height)
 
         self._turn = 1
+        self._texts = []
+        self._squares = {}
+        
         self.callback()
         self.update()
         self._win.mainloop()
@@ -50,6 +53,16 @@ class Render:
 
         def next():
             change_turn(+1)
+        
+        def restart():
+            change_turn((-self._turn)+1)
+            
+        def pause():
+            self.toggle_pause()
+            
+        self._master.bind('<Left>', lambda e: prev())
+        self._master.bind('<Right>', lambda e: next())
+        self._master.bind('<space>', lambda e: pause())
 
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
@@ -59,6 +72,8 @@ class Render:
         prevButton.pack(side='left')
         nextButton = Tkinter.Button(frame, text='>', command=next)
         nextButton.pack(side='left')
+        restartButton = Tkinter.Button(frame, text='<<', command=restart)
+        restartButton.pack(side='left')
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
@@ -76,11 +91,20 @@ class Render:
             return
 
         self._colors[loc] = color
-        color, hp = color
-        x, y = [p * self._blocksize + 20 for p in loc]
-        self._win.create_rectangle(x, y, x + self._blocksize - 3, y + self._blocksize - 3, fill=color, width=0)
-        if hp:
-            self._win.create_text(x + 8, y + 8, text=hp)
+        x, y = loc
+        item = self._win.create_rectangle(x * self._blocksize + 20, y * self._blocksize + 20,
+            x * self._blocksize + self._blocksize - 3 + 20, y * self._blocksize + self._blocksize - 3 + 20,
+            fill=color, width=0)
+        # Delete previous square on this location.
+        if loc in self._squares:
+            self._win.delete(self._squares.pop(loc))
+        self._squares[loc] = item
+            
+    def draw_text(self, loc, text, color=None):
+        x, y = loc
+        item = self._win.create_text(x * self._blocksize + 30, y * self._blocksize + 25,
+            text=text, fill=color)
+        self._texts.append(item)
 
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
@@ -101,18 +125,37 @@ class Render:
 
     def determine_color(self, loc):
         if loc in self._settings.obstacles:
-            return '#222', None
+            return '#222'
 
+        botinfo = self.loc_robot_hp_color(loc)
+        if botinfo is not None:
+            hp, color = botinfo
+            maxclr = min(hp, 50)
+            colorhex = 5 + maxclr / 5
+            return ('#%X00' if color == 0 else '#0%X0') % colorhex
+
+        return 'white'
+        
+    def loc_robot_hp_color(self, loc):
         for index, color in enumerate(('red', 'green')):
             for robot in self._game.history[index][self._turn - 1]:
                 if robot[0] == loc:
-                    colorhex = 5 + robot[1] / 5
-                    return ('#%X00' if index == 0 else '#0%X0') % colorhex, robot[1]
-
-        return 'white', None
+                    return (robot[1], index)
+        return None
 
     def paint(self):
+        for item in self._texts:
+            self._win.delete(item)
+        self._texts = []
+        
         for y in range(self._settings.board_size):
+            self.draw_text((y, 0), str(y), 'white')
+            self.draw_text((0, y), str(y), 'white')
             for x in range(self._settings.board_size):
                 loc = (x, y)
                 self.draw_square(loc, self.determine_color(loc))
+                botinfo = self.loc_robot_hp_color(loc)
+                if botinfo is not None:
+                    hp, color = botinfo
+                    color = 'white' if hp <= 20 else None
+                    self.draw_text(loc, hp, color=color)
