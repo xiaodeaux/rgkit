@@ -213,14 +213,15 @@ class Game:
                 y.location,
                 AttrDict(dict(
                     (x, getattr(y, x)) for x in
-                    settings.exposed_properties + settings.player_only_properties
+                    (settings.exposed_properties + settings.player_only_properties)
                 ))
             ) for y in self._robots),
             'turn': self.turns,
         })
 
-    def personalize_game_info(self, game_info):
-        game_info_copies = [AttrDict(game_info) for i in range(2)]
+    def build_players_game_info(self):
+        game_info_copies = [self.build_game_info(), self.build_game_info()]
+
         for i in range(2):
             for loc, robot in game_info_copies[i].robots.iteritems():
                 if robot.player_id != i:
@@ -231,8 +232,7 @@ class Game:
     def make_robots_act(self):
         global settings
 
-        game_info = self.build_game_info()
-        game_info_copies = self.personalize_game_info(game_info)
+        game_info_copies = self.build_players_game_info()
         actions = {}
 
         for robot in self._robots:
