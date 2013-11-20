@@ -214,10 +214,19 @@ class Game:
             'turn': self.turns,
         })
 
+    def hide_enemy_state(self, game_info):
+        game_info_copies = [AttrDict(game_info) for i in range(2)]
+        for i in range(2):
+            for loc, robot in game_info_copies[i].robots.iteritems():
+                if robot.player_id != i:
+                    del robot['state']
+        return game_info_copies
+
     def make_robots_act(self):
         global settings
 
         game_info = self.build_game_info()
+        game_info_copies = self.hide_enemy_state(game_info)
         actions = {}
 
         for robot in self._robots:
@@ -226,7 +235,7 @@ class Game:
                 setattr(user_robot, prop, getattr(robot, prop))
 
             try:
-                next_action = user_robot.act(game_info)
+                next_action = user_robot.act(game_info_copies[robot.player_id])
                 if not robot.is_valid_action(next_action):
                     raise Exception('%s is not a valid action from %s' % (str(next_action), robot.location))
             except Exception:
