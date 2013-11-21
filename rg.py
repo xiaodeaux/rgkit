@@ -37,8 +37,8 @@ def memodict(f):
 def loc_types(loc):
     for i in range(2):
         if not (0 <= loc[i] < settings.board_size):
-            return {'invalid'}
-    types = {'normal'}
+            return set(['invalid'])
+    types = set(['normal'])
     if loc in settings.spawn_coords:
         types.add('spawn')
     if loc in settings.obstacles:
