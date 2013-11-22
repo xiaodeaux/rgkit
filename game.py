@@ -172,12 +172,15 @@ class Field:
 
     def __getitem__(self, point):
         try:
-            return self.field[point[1]][point[0]]
+            return self.field[int(point[1])][int(point[0])]
         except TypeError:
             print point[1], point[0]
 
     def __setitem__(self, point, v):
-        self.field[point[1]][point[0]] = v
+        try:
+            self.field[int(point[1])][int(point[0])] = v
+        except TypeError:
+            print point[1], point[0]
 
 class Game:
     def __init__(self, player1, player2, record_turns=False, unit_testing=False):
