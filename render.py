@@ -2,7 +2,7 @@ import Tkinter
 import game
 
 class Render:
-    def __init__(self, game_inst, settings, block_size=20):
+    def __init__(self, game_inst, settings, block_size=25):
         self._settings = settings
         self._blocksize = block_size
         self._winsize = block_size * self._settings.board_size + 40
@@ -39,7 +39,7 @@ class Render:
 
     def toggle_pause(self):
         self._paused = not self._paused
-        self._toggleButton.config(text=u'\u25B6' if self._paused else u'\u25FC')
+        self._toggle_button.config(text=u'\u25B6' if self._paused else u'\u25FC')
 
     def create_controls(self, win, width, height):
         def change_turn(turns):
@@ -66,14 +66,14 @@ class Render:
 
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
-        self._toggleButton = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
-        self._toggleButton.pack(side='left')
-        prevButton = Tkinter.Button(frame, text='<', command=prev)
-        prevButton.pack(side='left')
-        nextButton = Tkinter.Button(frame, text='>', command=next)
-        nextButton.pack(side='left')
-        restartButton = Tkinter.Button(frame, text='<<', command=restart)
-        restartButton.pack(side='left')
+        self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
+        self._toggle_button.pack(side='left')
+        prev_button = Tkinter.Button(frame, text='<', command=prev)
+        prev_button.pack(side='left')
+        next_button = Tkinter.Button(frame, text='>', command=next)
+        next_button.pack(side='left')
+        restart_button = Tkinter.Button(frame, text='<<', command=restart)
+        restart_button.pack(side='left')
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
@@ -105,15 +105,16 @@ class Render:
     def draw_text(self, loc, text, color=None):
         x, y = loc
         item = self._win.create_text(
-            x * self._blocksize + 30, y * self._blocksize + 25,
-            text=text, fill=color)
+            x * self._blocksize + 30, y * self._blocksize + 30,
+            text=text, font='TkFixedFont', fill=color)
+
         self._texts.append(item)
 
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
         self._win.itemconfig(
-            self._label, text='Red: %d | Green: %d | Turn: %d/%d' %
+            self._label, text='Red: %d | green: %d | Turn: %d/%d' %
             (red, green, turns, max_turns))
 
     def callback(self):
@@ -133,9 +134,15 @@ class Render:
         botinfo = self.loc_robot_hp_color(loc)
         if botinfo is not None:
             hp, color = botinfo
+            rgb = [90, 90, 90]
+
+            # red or green?
+            rgb[color] += 35
             maxclr = min(hp, 50)
-            colorhex = 5 + maxclr / 5
-            return ('#%X00' if color == 0 else '#0%X0') % colorhex
+            for i, val in enumerate(rgb):
+                rgb[i] = val + (100 - maxclr * 1.75)
+
+            return '#%X%X%X' % tuple(rgb)
 
         return 'white'
 
@@ -152,13 +159,13 @@ class Render:
         self._texts = []
 
         for y in range(self._settings.board_size):
-            self.draw_text((y, 0), str(y), 'white')
-            self.draw_text((0, y), str(y), 'white')
+            self.draw_text((y, 0), str(y), '#888')
+            self.draw_text((0, y), str(y), '#888')
             for x in range(self._settings.board_size):
                 loc = (x, y)
                 self.draw_square(loc, self.determine_color(loc))
                 botinfo = self.loc_robot_hp_color(loc)
                 if botinfo is not None:
                     hp, color = botinfo
-                    color = 'white' if hp <= 20 else None
-                    self.draw_text(loc, hp, color=color)
+                    text_color = '#220808' if color == 0 else '#220808'
+                    self.draw_text(loc, hp, color=text_color)

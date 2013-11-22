@@ -14,7 +14,7 @@ parser.add_argument("usercode1",
 parser.add_argument("usercode2",
                     help="File containing second robot class definition.")
 parser.add_argument("-m", "--map", help="User-specified map file.",
-                    default='maps/default.py')
+                    default=os.path.join(os.path.dirname(__file__), 'maps/default.py'))
 parser.add_argument("-H", "--headless", action="store_true",
                     default=False,
                     help="Disable rendering game output.")
