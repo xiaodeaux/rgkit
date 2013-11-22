@@ -6,6 +6,18 @@ class RobotGuard:
     def act(self, game):
         return ['guard']
 
+class RobotAttackRightWithFloatingLocation:
+    def act(self, game):
+        return [
+            'attack',
+            (float(self.location[0] + 1),
+             float(self.location[1]))
+            ]
+
+class RobotAttackWithInvalidLocation:
+    def act(self, game):
+        return ['attack', ()]
+
 class RobotMoveRight:
     def act(self, game):
         return ['move', (self.location[0] + 1, self.location[1])]

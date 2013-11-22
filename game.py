@@ -349,10 +349,10 @@ class Game:
                 self.clear_spawn_points()
                 self.spawn_robot_batch()
 
-            if self._record:
-                round_history = self.make_history(actions)
-                for i in (0, 1):
-                    self.history[i].append(round_history[i])
+        if self._record:
+            round_history = self.make_history(actions)
+            for i in (0, 1):
+                self.history[i].append(round_history[i])
 
         self.turns += 1
 
