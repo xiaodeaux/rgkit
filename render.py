@@ -66,14 +66,18 @@ class Render:
 
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
-        self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
+        button_frame = Tkinter.Frame(frame)
+        self._toggle_button = Tkinter.Button(button_frame, text=u'\u25B6' if self._paused else u'\u25FC', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
-        prev_button = Tkinter.Button(frame, text='<', command=prev)
+        prev_button = Tkinter.Button(button_frame, text='<', command=prev)
         prev_button.pack(side='left')
-        next_button = Tkinter.Button(frame, text='>', command=next)
+        next_button = Tkinter.Button(button_frame, text='>', command=next)
         next_button.pack(side='left')
-        restart_button = Tkinter.Button(frame, text='<<', command=restart)
+        restart_button = Tkinter.Button(button_frame, text='<<', command=restart)
         restart_button.pack(side='left')
+        button_frame.pack()
+        self._time_slider = Tkinter.Scale(frame, from_=-50, to_=50, orient=Tkinter.HORIZONTAL, borderwidth=0)
+        self._time_slider.pack(fill=Tkinter.X)
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
@@ -118,10 +122,15 @@ class Render:
             (red, green, turns, max_turns))
 
     def callback(self):
+        v = self._time_slider.get()
+        v = -v
+        if v > 0:
+            v = v * 20
+        delay = self._settings.turn_interval + v
         if not self._paused:
             self.change_turn(1)
 
-        self._win.after(self._settings.turn_interval, self.callback)
+        self._win.after(delay, self.callback)
 
     def update(self):
         self.paint()
