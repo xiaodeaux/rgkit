@@ -30,6 +30,7 @@ class Render:
         self._texts = []
         self._squares = {}
         self._highlighted = None
+        self._highlightedtarget = None
 
         self.callback()
         self.update()
@@ -37,6 +38,7 @@ class Render:
 
     def change_turn(self, turns):
         self._turn = min(max(self._turn + turns, 1), self._game.turns)
+        self._highlightedtarget = None
         self.update()
 
     def toggle_pause(self):
@@ -71,6 +73,7 @@ class Render:
                     self._highlighted = None
                 else:
                     self._highlighted = loc
+                self._highlightedtarget = None
                 self.update()
 
         self._master.bind("<Button-1>", lambda e: onclick(e))
@@ -146,9 +149,9 @@ class Render:
                     lastaction += 'Last Action: %s' % (name,)
                     target = action['target']
                     if target is not None:
+                        self._highlightedtarget = target
+                        self.paint()
                         lastaction += ' to %s' % (target,)
-
-                    print action
 
         lines = [
             'Red: %d | Green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
@@ -186,6 +189,8 @@ class Render:
     def determine_color(self, loc):
         if loc == self._highlighted:
             return "#aaa"
+        if loc == self._highlightedtarget:
+            return "#aaf"
 
         squareinfo = self.get_square_info(loc)
         if 'obstacle' in squareinfo:
