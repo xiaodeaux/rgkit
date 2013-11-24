@@ -12,7 +12,7 @@ class Render:
         self._paused = False
 
         self._master = Tkinter.Tk()
-        self._master.title('Robot game')
+        self._master.title('Robot Game')
 
         width = self._winsize
         height = self._winsize + self._blocksize * 11/4
