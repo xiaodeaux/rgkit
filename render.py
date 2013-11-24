@@ -16,16 +16,6 @@ class Render:
         width = self._winsize
         height = self._winsize + self._blocksize * 11/4
         self._win = Tkinter.Canvas(self._master, width=width, height=height)
-        def onclick(event):
-            x = (event.x - 20) / self._blocksize
-            y = (event.y - 20) / self._blocksize
-            loc = (x, y)
-            if loc == self._highlighted:
-                self._highlighted = None
-            else:
-                self._highlighted = loc
-            print "clicked at", event.x, event.y
-        self._win.bind("<Button-1>", onclick)
         self._win.pack()
 
         self.prepare_backdrop(self._win)
@@ -71,6 +61,17 @@ class Render:
         def pause():
             self.toggle_pause()
 
+        def onclick(event):
+            x = (event.x - 20) / self._blocksize
+            y = (event.y - 20) / self._blocksize
+            loc = (x, y)
+            if loc == self._highlighted:
+                self._highlighted = None
+            else:
+                self._highlighted = loc
+            self.update()
+
+        self._master.bind("<Button-1>", lambda e: onclick(e))
         self._master.bind('<Left>', lambda e: prev())
         self._master.bind('<Right>', lambda e: next())
         self._master.bind('<space>', lambda e: pause())
