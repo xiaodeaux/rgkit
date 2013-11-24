@@ -133,7 +133,7 @@ class Render:
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
         info = ''
-        lastaction = ''
+        currentAction = ''
         if self._highlighted is not None:
             squareinfo = self.get_square_info(self._highlighted)
             if 'obstacle' in squareinfo:
@@ -143,20 +143,20 @@ class Render:
                 hp = botinfo[0]
                 team = botinfo[1]
                 info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
-                action = self._game.actionat[self._turn - 1].get(self._highlighted)
+                action = self._game.actionat[self._turn].get(self._highlighted)
                 if action:
                     name = action['name']
-                    lastaction += 'Last Action: %s' % (name,)
+                    currentAction += 'Current Action: %s' % (name,)
                     target = action['target']
                     if target is not None:
                         self._highlightedtarget = target
                         self.paint()
-                        lastaction += ' to %s' % (target,)
+                        currentAction += ' to %s' % (target,)
 
         lines = [
             'Red: %d | Green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
             'Highlighted: %s; %s' % (self._highlighted, info),
-            lastaction
+            currentAction
         ]
         self._win.itemconfig(
             self._label, text='\n'.join(lines))
