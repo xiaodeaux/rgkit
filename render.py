@@ -66,11 +66,12 @@ class Render:
             x = (event.x - 20) / self._blocksize
             y = (event.y - 20) / self._blocksize
             loc = (x, y)
-            if loc == self._highlighted:
-                self._highlighted = None
-            else:
-                self._highlighted = loc
-            self.update()
+            if loc[0] >= 0 and loc[1] >= 0 and loc[0] < self._settings.board_size and loc[1] < self._settings.board_size:
+                if loc == self._highlighted:
+                    self._highlighted = None
+                else:
+                    self._highlighted = loc
+                self.update()
 
         self._master.bind("<Button-1>", lambda e: onclick(e))
         self._master.bind('<Left>', lambda e: prev())
