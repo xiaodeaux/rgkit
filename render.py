@@ -1,6 +1,7 @@
 import Tkinter
 import game
 
+
 class Render:
     def __init__(self, game_inst, settings, block_size=25):
         self._settings = settings
@@ -137,21 +138,21 @@ class Render:
                 info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
 
         lines = [
-        'Red: %d | green: %d | Turn: %d/%d' %  (red, green, turns, max_turns),
-        'Highlighted: %s; %s' % (self._highlighted, info)
+            'Red: %d | green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
+            'Highlighted: %s; %s' % (self._highlighted, info)
         ]
         self._win.itemconfig(
             self._label, text='\n'.join(lines))
-            
 
     def get_square_info(self, loc):
-        if loc in self._settings.obstacles: return ['obstacle']
+        if loc in self._settings.obstacles:
+            return ['obstacle']
 
         botinfo = self.loc_robot_hp_color(loc)
-        if botinfo is not None: return ['bot', botinfo]
+        if botinfo is not None:
+            return ['bot', botinfo]
 
         return ['normal']
-
 
     def callback(self):
         if not self._paused:
