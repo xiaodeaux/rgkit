@@ -12,7 +12,7 @@ class Render:
         self._paused = False
 
         self._master = Tkinter.Tk()
-        self._master.title('robot game')
+        self._master.title('Robot game')
 
         width = self._winsize
         height = self._winsize + self._blocksize * 11/4
@@ -88,6 +88,8 @@ class Render:
         next_button.pack(side='left')
         restart_button = Tkinter.Button(frame, text='<<', command=restart)
         restart_button.pack(side='left')
+        self._time_slider = Tkinter.Scale(frame, from_=-50, to_=50, orient=Tkinter.HORIZONTAL, borderwidth=0)
+        self._time_slider.pack()
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
@@ -128,6 +130,7 @@ class Render:
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
         info = ''
+        lastaction = ''
         if self._highlighted is not None:
             squareinfo = self.get_square_info(self._highlighted)
             if 'obstacle' in squareinfo:
@@ -137,10 +140,20 @@ class Render:
                 hp = botinfo[0]
                 team = botinfo[1]
                 info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
+                action = self._game.actionat[self._turn - 1].get(self._highlighted)
+                if action:
+                    name = action['name']
+                    lastaction += 'Last Action: %s' % (name,)
+                    target = action['target']
+                    if target is not None:
+                        lastaction += ' to %s' % (target,)
+
+                    print action
 
         lines = [
-            'Red: %d | green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
-            'Highlighted: %s; %s' % (self._highlighted, info)
+            'Red: %d | Green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
+            'Highlighted: %s; %s' % (self._highlighted, info),
+            lastaction
         ]
         self._win.itemconfig(
             self._label, text='\n'.join(lines))
@@ -156,10 +169,15 @@ class Render:
         return ['normal']
 
     def callback(self):
+        v = self._time_slider.get()
+        v = -v
+        if v > 0:
+            v = v * 20
+        delay = self._settings.turn_interval + v
         if not self._paused:
             self.change_turn(1)
 
-        self._win.after(self._settings.turn_interval, self.callback)
+        self._win.after(delay, self.callback)
 
     def update(self):
         self.paint()

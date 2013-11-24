@@ -194,6 +194,7 @@ class Game:
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
+            self.actionat = {}
 
         self.spawn_starting()
 
@@ -356,6 +357,16 @@ class Game:
             round_history = self.make_history(actions)
             for i in (0, 1):
                 self.history[i].append(round_history[i])
+            self.actionat[self.turns] = {}
+            for robot, action in actions.iteritems():
+                newaction = {}
+                name = action[0]
+                loc = robot.location
+                newaction['name'] = name
+                newaction['target'] = action[1] if len(action) > 1 else None
+                # newaction['source'] = loc
+                # newaction['robot'] = robot
+                self.actionat[self.turns][loc] = newaction
 
         self.turns += 1
 
