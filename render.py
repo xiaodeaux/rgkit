@@ -14,8 +14,18 @@ class Render:
         self._master.title('robot game')
 
         width = self._winsize
-        height = self._winsize + self._blocksize * 7/4
+        height = self._winsize + self._blocksize * 11/4
         self._win = Tkinter.Canvas(self._master, width=width, height=height)
+        def onclick(event):
+            x = (event.x - 20) / self._blocksize
+            y = (event.y - 20) / self._blocksize
+            loc = (x, y)
+            if loc == self._highlighted:
+                self._highlighted = None
+            else:
+                self._highlighted = loc
+            print "clicked at", event.x, event.y
+        self._win.bind("<Button-1>", onclick)
         self._win.pack()
 
         self.prepare_backdrop(self._win)
@@ -28,6 +38,7 @@ class Render:
         self._turn = 1
         self._texts = []
         self._squares = {}
+        self._highlighted = None
 
         self.callback()
         self.update()
@@ -77,7 +88,7 @@ class Render:
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
-        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 7/4, fill='#333', width=0)
+        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 15/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
                 self._win.create_rectangle(
@@ -113,9 +124,33 @@ class Render:
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
+        info = ''
+        if self._highlighted is not None:
+            squareinfo = self.get_square_info(self._highlighted)
+            if 'obstacle' in squareinfo:
+                info = 'Obstacle'
+            elif 'bot' in squareinfo:
+                botinfo = squareinfo[1]
+                hp = botinfo[0]
+                team = botinfo[1]
+                info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
+
+        lines = [
+        'Red: %d | green: %d | Turn: %d/%d' %  (red, green, turns, max_turns),
+        'Highlighted: %s; %s' % (self._highlighted, info)
+        ]
         self._win.itemconfig(
-            self._label, text='Red: %d | green: %d | Turn: %d/%d' %
-            (red, green, turns, max_turns))
+            self._label, text='\n'.join(lines))
+            
+
+    def get_square_info(self, loc):
+        if loc in self._settings.obstacles: return ['obstacle']
+
+        botinfo = self.loc_robot_hp_color(loc)
+        if botinfo is not None: return ['bot', botinfo]
+
+        return ['normal']
+
 
     def callback(self):
         if not self._paused:
@@ -128,14 +163,16 @@ class Render:
         self.update_title(self._turn, self._settings.max_turns)
 
     def determine_color(self, loc):
-        if loc in self._settings.obstacles:
+        if loc == self._highlighted:
+            return "#aaa"
+
+        squareinfo = self.get_square_info(loc)
+        if 'obstacle' in squareinfo:
             return '#222'
 
-        botinfo = self.loc_robot_hp_color(loc)
-        if botinfo is not None:
-            hp, color = botinfo
+        if 'bot' in squareinfo:
+            hp, color = squareinfo[1]
             rgb = [90, 90, 90]
-
             # red or green?
             rgb[color] += 35
             maxclr = min(hp, 50)
