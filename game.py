@@ -242,7 +242,7 @@ class Game:
             try:
                 next_action = user_robot.act(game_info_copies[robot.player_id])
                 if not robot.is_valid_action(next_action):
-                    raise Exception('%s is not a valid action from %s' % (str(next_action), robot.location))
+                    raise Exception('Bot %d: %s is not a valid action from %s' % (robot.player_id + 1, str(next_action), robot.location))
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 next_action = ['guard']
