@@ -71,6 +71,9 @@ class RobotSprite:
         r *= hp / max_hp
         g *= hp / max_hp
         b *= hp / max_hp
+        r = max(r, 0)
+        g = max(g, 0)
+        b = max(b, 0)
         return rgb_to_hex(r, g, b)
     
     def draw_bot(self, delta):
@@ -127,6 +130,7 @@ class Render:
         self._t_paused = 0
         self._t_frame_start = 0
         self._t_next_frame = 0
+        self.slider_delay = 0
         self.update_frame_timing()
 
         self.draw_background()
@@ -163,7 +167,7 @@ class Render:
         if tstart is None:
             tstart = millis()
         self._t_frame_start = tstart
-        self._t_next_frame = tstart + self._settings.turn_interval
+        self._t_next_frame = tstart + self.slider_delay
 
     def create_controls(self, win, width, height):
         def change_turn(turns):
@@ -189,14 +193,22 @@ class Render:
 
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
-        self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
+        button_frame = Tkinter.Frame(frame)
+        self._toggle_button = Tkinter.Button(button_frame, text=u'\u25B6' if self._paused else u'\u25FC', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
-        prev_button = Tkinter.Button(frame, text='<', command=prev)
+        prev_button = Tkinter.Button(button_frame, text='<', command=prev)
         prev_button.pack(side='left')
-        next_button = Tkinter.Button(frame, text='>', command=next)
+        next_button = Tkinter.Button(button_frame, text='>', command=next)
         next_button.pack(side='left')
-        restart_button = Tkinter.Button(frame, text='<<', command=restart)
+        restart_button = Tkinter.Button(button_frame, text='<<', command=restart)
         restart_button.pack(side='left')
+        button_frame.pack()
+        self._time_slider = Tkinter.Scale(frame,
+            from_=-self._settings.turn_interval/2,
+            to_=self._settings.turn_interval/2,
+            orient=Tkinter.HORIZONTAL, borderwidth=0)
+        self._time_slider.pack(fill=Tkinter.X)
+        self._time_slider.set(0)
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
@@ -228,6 +240,17 @@ class Render:
             self._label, text='Red: %d | green: %d | Turn: %d/%d' %
             (red, green, turns, max_turns))
 
+    def update_slider_value(self):
+        v = -self._time_slider.get()
+        if v > 0:
+            v = v * 20
+        self.slider_delay = self._settings.turn_interval + v
+        
+    def callback(self):
+        self.update_slider_value()
+        self.tick()
+        self._win.after(int(1000.0 / self._settings.FPS), self.callback)
+
     def tick(self):
         now = millis()
         # check if frame-update
@@ -238,12 +261,8 @@ class Render:
                     self.toggle_pause()
                 else:
                     self.update_frame_timing(self._t_next_frame)
-            subframe = float(now - self._t_frame_start) / float(self._settings.turn_interval)
+            subframe = float(now - self._t_frame_start) / float(self.slider_delay)
             self.paint(subframe)
-
-    def callback(self):
-        self.tick()
-        self._win.after(int(1000.0 / self._settings.FPS), self.callback)
 
     def determine_bg_color(self, loc):
         if loc in self._settings.obstacles:
