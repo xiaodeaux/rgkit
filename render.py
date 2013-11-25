@@ -39,10 +39,10 @@ class HighlightSprite:
             if delta < 0.5:
                 if self.hlt_square is None:
                     color = rgb_to_hex(*self.renderer._settings.highlight_color)
-                    self.hlt_square = self.renderer.draw_grid_object(self.location, fill=color, width=0)
+                    self.hlt_square = self.renderer.draw_grid_object(self.location, fill=color, layer=2, width=0)
                 if self.target is not None and self.target_square is None:
                     color = rgb_to_hex(*self.renderer._settings.target_color)
-                    self.target_square = self.renderer.draw_grid_object(self.target, fill=color, width=0)
+                    self.target_square = self.renderer.draw_grid_object(self.target, fill=color, layer=2, width=0)
             else:
                 self.clear()
 
@@ -71,6 +71,7 @@ class RobotSprite:
         """
         delta = max(0, min(delta, 1))
         bot_color = self.compute_color(self.id, self.hp)
+        x,y = self.location
         self.animation_offset = (0,0)
         if self.action == 'move':
             # if normal move, start at bot location and move to next location
@@ -90,10 +91,9 @@ class RobotSprite:
             off_y = dy*delta*self.renderer._blocksize
             self.animation_offset = (off_x, off_y)
         elif self.action == 'attack':
-            x,y = self.location
             if self.overlay is None and self.renderer.show_arrows.get():
                 offset = (self.renderer._blocksize/2,self.renderer._blocksize/2)
-                self.overlay = self.renderer.draw_line(self.location, self.target, fill='orange', offset=offset, width=3.0, arrow=Tkinter.LAST)
+                self.overlay = self.renderer.draw_line(self.location, self.target, layer=4, fill='orange', offset=offset, width=3.0, arrow=Tkinter.LAST)
             elif self.overlay is not None and not self.renderer.show_arrows.get():
                 self.renderer.remove_object(self.overlay)
                 self.overlay = None
@@ -125,7 +125,7 @@ class RobotSprite:
         rx, ry = self.renderer.square_bottom_corner((x,y))
         ox, oy = self.animation_offset
         if self.square is None:
-            self.square = self.renderer.draw_grid_object(self.location, type="circle", fill=color, width=0)
+            self.square = self.renderer.draw_grid_object(self.location, type="circle", layer=3, fill=color, width=0)
         self.renderer._win.coords(self.square, (x+ox, y+oy, rx+ox, ry+oy))
 
     def draw_bot_hp(self, delta, loc):
@@ -290,9 +290,14 @@ class Render:
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
                 rgb = self._settings.normal_color if "normal" in rg.loc_types((x,y)) else self._settings.obstacle_color
-                self.draw_grid_object((x,y), fill=rgb_to_hex(*rgb), width=0)
+                self.draw_grid_object((x,y), fill=rgb_to_hex(*rgb), layer=1, width=0)
 
-    def draw_grid_object(self, loc, type="square", **kargs):
+    def draw_grid_object(self, loc, type="square", layer=0, **kargs):
+        layer_id = 'layer %d' % layer
+        self._layers[layer_id] = None
+        tags = kargs.get("tags", [])
+        tags.append(layer_id)
+        kargs["tags"] = tags
         x, y = self.grid_to_xy(loc)
         rx, ry = self.square_bottom_corner((x,y))
         if type == "square":
@@ -304,15 +309,26 @@ class Render:
                 x, y, rx, ry,
                 **kargs)
         return item
+    
+    def update_layers(self):
+        for layer in self._layers:
+            self._win.tag_raise(layer)
 
     def draw_text(self, loc, text, color=None):
+        layer_id = 'layer %d' % 9
+        self._layers[layer_id] = None
         x, y = self.grid_to_xy(loc)
         item = self._win.create_text(
             x+10, y+10,
-            text=text, font='TkFixedFont', fill=color)
+            text=text, font='TkFixedFont', fill=color, tags=[layer_id])
         return item
 
-    def draw_line(self, src, dst, offset=(0,0), **kargs):
+    def draw_line(self, src, dst, offset=(0,0), layer=0, **kargs):
+        layer_id = 'layer %d' % layer
+        self._layers[layer_id] = None
+        tags = kargs.get("tags", [])
+        tags.append(layer_id)
+        kargs["tags"] = tags
         ox, oy = offset
         srcx, srcy = self.grid_to_xy(src)
         dstx, dsty = self.grid_to_xy(dst)
@@ -396,7 +412,7 @@ class Render:
         for y in range(self._settings.board_size):
             for x in range(self._settings.board_size):
                 loc = (x, y)
-                self.draw_grid_object(loc, fill=self.determine_bg_color(loc), width=0)
+                self.draw_grid_object(loc, fill=self.determine_bg_color(loc), layer=1, width=0)
         # draw text labels
         for y in range(self._settings.board_size):
             self.draw_text((y, 0), str(y), '#888')
@@ -423,7 +439,8 @@ class Render:
             sprite.animate(subframe if not self._paused else 0)
         if self._highlight_sprite is not None:
             self._highlight_sprite.animate(subframe)
-    
+        self.update_layers()
+        
     def grid_to_xy(self, loc):
         x,y = loc
         return  (x * self._blocksize + 20, y * self._blocksize + 20)
