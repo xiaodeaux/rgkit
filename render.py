@@ -29,8 +29,9 @@ class Render:
         self._turn = 1
         self._texts = []
         self._squares = {}
+
         self._highlighted = None
-        self._highlightedtarget = None
+        self._highlighted_target = None
 
         self.callback()
         self.update()
@@ -38,7 +39,7 @@ class Render:
 
     def change_turn(self, turns):
         self._turn = min(max(self._turn + turns, 1), self._game.turns)
-        self._highlightedtarget = None
+        self._highlighted_target = None
         self.update()
 
     def toggle_pause(self):
@@ -73,7 +74,7 @@ class Render:
                     self._highlighted = None
                 else:
                     self._highlighted = loc
-                self._highlightedtarget = None
+                self._highlighted_target = None
                 self.update()
 
         self._master.bind("<Button-1>", lambda e: onclick(e))
@@ -81,8 +82,12 @@ class Render:
         self._master.bind('<Right>', lambda e: next())
         self._master.bind('<space>', lambda e: pause())
 
+        self.show_arrows = Tkinter.BooleanVar()
+
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
+        arrows_box = Tkinter.Checkbutton(frame, text="Show Arrows", variable=self.show_arrows, command=self.paint)
+        arrows_box.pack()
         self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
         prev_button = Tkinter.Button(frame, text='<', command=prev)
@@ -129,6 +134,18 @@ class Render:
 
         self._texts.append(item)
 
+    def draw_line(self, src, dst, color='lightblue'):
+        srcx = src[0] * self._blocksize + self._blocksize
+        srcy = src[1] * self._blocksize + self._blocksize
+        dstx = dst[0] * self._blocksize + self._blocksize
+        dsty = dst[1] * self._blocksize + self._blocksize
+
+        item = self._win.create_line(srcx, srcy, dstx, dsty, fill=color, width=3.0, arrow=Tkinter.LAST)
+        self._texts.append(item)
+
+    def current_turn(self):
+        return min(99, self._turn)
+
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
@@ -143,13 +160,13 @@ class Render:
                 hp = botinfo[0]
                 team = botinfo[1]
                 info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
-                action = self._game.actionat[self._turn].get(self._highlighted)
+                action = self._game.actionat[self.current_turn()].get(self._highlighted)
                 if action:
                     name = action['name']
                     currentAction += 'Current Action: %s' % (name,)
                     target = action['target']
                     if target is not None:
-                        self._highlightedtarget = target
+                        self._highlighted_target = target
                         self.paint()
                         currentAction += ' to %s' % (target,)
 
@@ -189,7 +206,7 @@ class Render:
     def determine_color(self, loc):
         if loc == self._highlighted:
             return "#aaa"
-        if loc == self._highlightedtarget:
+        if loc == self._highlighted_target:
             return "#aaf"
 
         squareinfo = self.get_square_info(loc)
@@ -232,3 +249,15 @@ class Render:
                     hp, color = botinfo
                     text_color = '#220808' if color == 0 else '#220808'
                     self.draw_text(loc, hp, color=text_color)
+
+                    if self.show_arrows.get():
+                        lines = []
+                        action = self._game.actionat[self.current_turn()].get(loc)
+                        if action:
+                            dst = action['target']
+                            if action['name'] == 'attack':
+                                lines.append((loc, dst, 'orange'))
+                            elif action['name'] == 'move':
+                                lines.append((loc, dst))
+                        for line in lines:
+                            self.draw_line(*line)

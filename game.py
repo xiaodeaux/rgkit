@@ -195,6 +195,7 @@ class Game:
         if self._record:
             self.history = [[] for i in range(2)]
             self.actionat = {}
+            self.lastlocs = {}
 
         self.spawn_starting()
 
@@ -258,6 +259,7 @@ class Game:
         commands.remove('move')
         commands.insert(0, 'move')
 
+        self.lastlocs = {}
         for cmd in commands:
             for robot, action in actions.iteritems():
                 if action[0] != cmd:
@@ -272,6 +274,7 @@ class Game:
                 if robot.location != old_loc:
                     if self._field[old_loc] is robot:
                         self._field[old_loc] = None
+                        self.lastlocs[robot.location] = old_loc
                     self._field[robot.location] = robot
 
         return actions
@@ -357,11 +360,12 @@ class Game:
             round_history = self.make_history(actions)
             for i in (0, 1):
                 self.history[i].append(round_history[i])
+
             self.actionat[self.turns] = {}
             for robot, action in actions.iteritems():
                 newaction = {}
                 name = action[0]
-                loc = robot.location
+                loc = self.lastlocs.get(robot.location, robot.location)
                 newaction['name'] = name
                 newaction['target'] = action[1] if len(action) > 1 else None
                 # newaction['source'] = loc
