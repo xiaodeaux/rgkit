@@ -198,9 +198,9 @@ class Render:
 
         if 'bot' in squareinfo:
             hp, color = squareinfo[1]
-            rgb = [90, 90, 90]
+            rgb = [35, 35, 35]
             # red or green?
-            rgb[color] += 35
+            rgb[color] += 90
             maxclr = min(hp, 50)
             for i, val in enumerate(rgb):
                 rgb[i] = val + (100 - maxclr * 1.75)
