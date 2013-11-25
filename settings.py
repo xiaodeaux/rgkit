@@ -12,7 +12,7 @@ settings = {
     # rendering
     'FPS': 60, # frames per second
     'turn_interval': 300, # milliseconds per turn
-    'colors': [(1,0,0),(0,1,0),(0,0,1)],
+    'colors': [(0.9,0,0.2),(0,0.9,0.2)],
 
     # rating systems
     'rating_range': 150,
