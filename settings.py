@@ -10,7 +10,9 @@ settings = {
     'max_turns': 100,
 
     # rendering
-    'turn_interval': 100,
+    'FPS': 60, # frames per second
+    'turn_interval': 300, # milliseconds per turn
+    'colors': [(1,0,0),(0,1,0),(0,0,1)],
 
     # rating systems
     'rating_range': 150,

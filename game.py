@@ -165,6 +165,27 @@ class InternalRobot:
         for loc in rg.locs_around(self.location):
             self.call_attack(loc, action_table, damage=settings.suicide_damage)
 
+class RobotSnapshot:
+    """Wrapper for the state of a robot in a given turn
+    
+       since robots are always changing, this gives us a lightweight way to wrap a robot's state, action, and next state
+       (used with animation)
+    """
+    
+    def __init__(self, robot_obj, action=None):
+        self.robot_ref = robot_obj
+        self.location = robot_obj.location
+        self.hp = robot_obj.hp
+        self.player_id = robot_obj.player_id
+        self.action = action
+        # the following values are updated later with a call to set_next_values()
+        self.location_next = self.location
+        self.hp_next = self.hp
+    
+    def set_next_values(self):
+        self.location_next = self.robot_ref.location
+        self.hp_next = self.robot_ref.hp
+
 # just to make things easier
 class Field:
     def __init__(self, size):
@@ -188,6 +209,7 @@ class Game:
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
+        self._recent_activity_list = []
         self._unit_testing = unit_testing
         self._id_inc = 0
 
@@ -242,7 +264,6 @@ class Game:
             user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
             for prop in settings.exposed_properties + settings.player_only_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
-
             try:
                 next_action = user_robot.act(game_info_copies[robot.player_id])
                 if not robot.is_valid_action(next_action):
@@ -251,6 +272,7 @@ class Game:
                 traceback.print_exc(file=sys.stdout)
                 next_action = ['guard']
             actions[robot] = next_action
+            self._recent_activity[robot.location] = RobotSnapshot(robot, next_action)
 
         commands = list(settings.valid_commands)
         commands.remove('guard')
@@ -263,16 +285,16 @@ class Game:
                     continue
 
                 old_loc = robot.location
+                old_hp = robot.hp
                 try:
                     robot.issue_command(action, actions)
                 except Exception:
                     traceback.print_exc(file=sys.stdout)
-                    actions[robot] = ['guard']
+                    action = actions[robot] = ['guard']
                 if robot.location != old_loc:
                     if self._field[old_loc] is robot:
                         self._field[old_loc] = None
                     self._field[robot.location] = robot
-
         return actions
 
     def robot_at_loc(self, loc):
@@ -285,6 +307,7 @@ class Game:
         robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field, robot_type)
         self._robots.append(robot)
         self._field[loc] = robot
+        self._recent_activity[loc] = RobotSnapshot(robot, ['spawn'])
 
     def validate_spawns(self, spawns):
         global settings
@@ -326,6 +349,7 @@ class Game:
             self._robots.remove(robot)
             if self._field[robot.location] == robot:
                 self._field[robot.location] = None
+            self._recent_activity[robot.location] = RobotSnapshot(robot, ['dead'])
 
     def make_history(self, actions):
         global settings
@@ -343,7 +367,8 @@ class Game:
 
     def run_turn(self):
         global settings
-
+        
+        self._recent_activity = Field(settings.board_size)
         actions = self.make_robots_act()
         self.remove_dead()
 
@@ -357,6 +382,14 @@ class Game:
             for i in (0, 1):
                 self.history[i].append(round_history[i])
 
+        for x in range(settings.board_size):
+            for y in range(settings.board_size):
+                loc = (x,y)
+                snapshot = self._recent_activity[loc]
+                if snapshot is not None:
+                    snapshot.set_next_values()
+        self._recent_activity_list.append(self._recent_activity)
+
         self.turns += 1
 
     def get_scores(self):
@@ -364,3 +397,10 @@ class Game:
         for robot in self._robots:
             scores[robot.player_id] += 1
         return scores
+
+    def get_recent_activity(self, turn):
+        if turn > len(self._recent_activity_list):
+            return self._recent_activity_list[-1]
+        elif turn <= 0:
+            return self._recent_activity_list[0]
+        return self._recent_activity_list[turn-1]
