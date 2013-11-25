@@ -9,7 +9,7 @@ class Render:
         self._winsize = block_size * self._settings.board_size + 40
         self._game = game_inst
         self._colors = game.Field(self._settings.board_size)
-        self._paused = False
+        self._paused = True
 
         self._master = Tkinter.Tk()
         self._master.title('Robot Game')
