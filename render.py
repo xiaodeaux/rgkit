@@ -1,6 +1,7 @@
 import Tkinter
 import game
 
+
 class Render:
     def __init__(self, game_inst, settings, block_size=25):
         self._settings = settings
@@ -8,13 +9,13 @@ class Render:
         self._winsize = block_size * self._settings.board_size + 40
         self._game = game_inst
         self._colors = game.Field(self._settings.board_size)
-        self._paused = False
+        self._paused = True
 
         self._master = Tkinter.Tk()
-        self._master.title('robot game')
+        self._master.title('Robot Game')
 
         width = self._winsize
-        height = self._winsize + self._blocksize * 7/4
+        height = self._winsize + self._blocksize * 11/4
         self._win = Tkinter.Canvas(self._master, width=width, height=height)
         self._win.pack()
 
@@ -29,12 +30,16 @@ class Render:
         self._texts = []
         self._squares = {}
 
+        self._highlighted = None
+        self._highlighted_target = None
+
         self.callback()
         self.update()
         self._win.mainloop()
 
     def change_turn(self, turns):
         self._turn = min(max(self._turn + turns, 1), self._game.turns)
+        self._highlighted_target = None
         self.update()
 
     def toggle_pause(self):
@@ -60,28 +65,43 @@ class Render:
         def pause():
             self.toggle_pause()
 
+        def onclick(event):
+            x = (event.x - 20) / self._blocksize
+            y = (event.y - 20) / self._blocksize
+            loc = (x, y)
+            if loc[0] >= 0 and loc[1] >= 0 and loc[0] < self._settings.board_size and loc[1] < self._settings.board_size:
+                if loc == self._highlighted:
+                    self._highlighted = None
+                else:
+                    self._highlighted = loc
+                self._highlighted_target = None
+                self.update()
+
+        self._master.bind("<Button-1>", lambda e: onclick(e))
         self._master.bind('<Left>', lambda e: prev())
         self._master.bind('<Right>', lambda e: next())
         self._master.bind('<space>', lambda e: pause())
 
+        self.show_arrows = Tkinter.BooleanVar()
+
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
-        button_frame = Tkinter.Frame(frame)
-        self._toggle_button = Tkinter.Button(button_frame, text=u'\u25B6' if self._paused else u'\u25FC', command=self.toggle_pause)
+        arrows_box = Tkinter.Checkbutton(frame, text="Show Arrows", variable=self.show_arrows, command=self.paint)
+        arrows_box.pack()
+        self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
-        prev_button = Tkinter.Button(button_frame, text='<', command=prev)
+        prev_button = Tkinter.Button(frame, text='<', command=prev)
         prev_button.pack(side='left')
-        next_button = Tkinter.Button(button_frame, text='>', command=next)
+        next_button = Tkinter.Button(frame, text='>', command=next)
         next_button.pack(side='left')
-        restart_button = Tkinter.Button(button_frame, text='<<', command=restart)
+        restart_button = Tkinter.Button(frame, text='<<', command=restart)
         restart_button.pack(side='left')
-        button_frame.pack()
         self._time_slider = Tkinter.Scale(frame, from_=-50, to_=50, orient=Tkinter.HORIZONTAL, borderwidth=0)
-        self._time_slider.pack(fill=Tkinter.X)
+        self._time_slider.pack()
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
-        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 7/4, fill='#333', width=0)
+        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 15/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
                 self._win.create_rectangle(
@@ -114,12 +134,59 @@ class Render:
 
         self._texts.append(item)
 
+    def draw_line(self, src, dst, color='lightblue'):
+        srcx = src[0] * self._blocksize + self._blocksize
+        srcy = src[1] * self._blocksize + self._blocksize
+        dstx = dst[0] * self._blocksize + self._blocksize
+        dsty = dst[1] * self._blocksize + self._blocksize
+
+        item = self._win.create_line(srcx, srcy, dstx, dsty, fill=color, width=3.0, arrow=Tkinter.LAST)
+        self._texts.append(item)
+
+    def current_turn(self):
+        return min(99, self._turn)
+
     def update_title(self, turns, max_turns):
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
+        info = ''
+        currentAction = ''
+        if self._highlighted is not None:
+            squareinfo = self.get_square_info(self._highlighted)
+            if 'obstacle' in squareinfo:
+                info = 'Obstacle'
+            elif 'bot' in squareinfo:
+                botinfo = squareinfo[1]
+                hp = botinfo[0]
+                team = botinfo[1]
+                info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
+                action = self._game.actionat[self.current_turn()].get(self._highlighted)
+                if action:
+                    name = action['name']
+                    currentAction += 'Current Action: %s' % (name,)
+                    target = action['target']
+                    if target is not None:
+                        self._highlighted_target = target
+                        self.paint()
+                        currentAction += ' to %s' % (target,)
+
+        lines = [
+            'Red: %d | Green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
+            'Highlighted: %s; %s' % (self._highlighted, info),
+            currentAction
+        ]
         self._win.itemconfig(
-            self._label, text='Red: %d | green: %d | Turn: %d/%d' %
-            (red, green, turns, max_turns))
+            self._label, text='\n'.join(lines))
+
+    def get_square_info(self, loc):
+        if loc in self._settings.obstacles:
+            return ['obstacle']
+
+        botinfo = self.loc_robot_hp_color(loc)
+        if botinfo is not None:
+            return ['bot', botinfo]
+
+        return ['normal']
 
     def callback(self):
         v = self._time_slider.get()
@@ -137,16 +204,20 @@ class Render:
         self.update_title(self._turn, self._settings.max_turns)
 
     def determine_color(self, loc):
-        if loc in self._settings.obstacles:
+        if loc == self._highlighted:
+            return "#aaa"
+        if loc == self._highlighted_target:
+            return "#aaf"
+
+        squareinfo = self.get_square_info(loc)
+        if 'obstacle' in squareinfo:
             return '#222'
 
-        botinfo = self.loc_robot_hp_color(loc)
-        if botinfo is not None:
-            hp, color = botinfo
-            rgb = [90, 90, 90]
-
+        if 'bot' in squareinfo:
+            hp, color = squareinfo[1]
+            rgb = [35, 35, 35]
             # red or green?
-            rgb[color] += 35
+            rgb[color] += 90
             maxclr = min(hp, 50)
             for i, val in enumerate(rgb):
                 rgb[i] = val + (100 - maxclr * 1.75)
@@ -178,3 +249,15 @@ class Render:
                     hp, color = botinfo
                     text_color = '#220808' if color == 0 else '#220808'
                     self.draw_text(loc, hp, color=text_color)
+
+                    if self.show_arrows.get():
+                        lines = []
+                        action = self._game.actionat[self.current_turn()].get(loc)
+                        if action:
+                            dst = action['target']
+                            if action['name'] == 'attack':
+                                lines.append((loc, dst, 'orange'))
+                            elif action['name'] == 'move':
+                                lines.append((loc, dst))
+                        for line in lines:
+                            self.draw_line(*line)

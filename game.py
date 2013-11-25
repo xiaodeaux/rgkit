@@ -188,6 +188,8 @@ class Game:
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
+            self.actionat = {}
+            self.lastlocs = {}
 
         self.spawn_starting()
 
@@ -240,7 +242,7 @@ class Game:
             try:
                 next_action = user_robot.act(game_info_copies[robot.player_id])
                 if not robot.is_valid_action(next_action):
-                    raise Exception('%s is not a valid action from %s' % (str(next_action), robot.location))
+                    raise Exception('Bot %d: %s is not a valid action from %s' % (robot.player_id + 1, str(next_action), robot.location))
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 next_action = ['guard']
@@ -251,6 +253,7 @@ class Game:
         commands.remove('move')
         commands.insert(0, 'move')
 
+        self.lastlocs = {}
         for cmd in commands:
             for robot, action in actions.iteritems():
                 if action[0] != cmd:
@@ -265,6 +268,7 @@ class Game:
                 if robot.location != old_loc:
                     if self._field[old_loc] is robot:
                         self._field[old_loc] = None
+                        self.lastlocs[robot.location] = old_loc
                     self._field[robot.location] = robot
 
         return actions
@@ -331,6 +335,17 @@ class Game:
             round_history = self.make_history(actions)
             for i in (0, 1):
                 self.history[i].append(round_history[i])
+
+            self.actionat[self.turns] = {}
+            for robot, action in actions.iteritems():
+                newaction = {}
+                name = action[0]
+                loc = self.lastlocs.get(robot.location, robot.location)
+                newaction['name'] = name
+                newaction['target'] = action[1] if len(action) > 1 else None
+                # newaction['source'] = loc
+                # newaction['robot'] = robot
+                self.actionat[self.turns][loc] = newaction
 
         self.turns += 1
 
