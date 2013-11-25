@@ -5,7 +5,6 @@ import ast
 import argparse
 ###
 import game
-import render
 from settings import settings
 
 parser = argparse.ArgumentParser(description="Robot game execution script.")
@@ -34,6 +33,11 @@ def play(players, print_info=True):
         g.run_turn()
 
     if print_info:
+        # only import render if we need to render the game;
+        # this way, people who don't have tkinter can still
+        # run headless
+        import render
+
         render.Render(g, game.settings)
         print g.history
 
