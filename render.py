@@ -65,9 +65,9 @@ class RobotSprite:
         self.draw_bot_hp(delta)
 
     def compute_color(self, player, hp):
-        max_hp = float(self.renderer._settings.robot_hp)
+        max_hp = float(self.renderer._settings.robot_hp + 20)
         r,g,b = self.renderer._settings.colors[player]
-        hp = float(hp)
+        hp = float(hp + 20)
         r *= hp / max_hp
         g *= hp / max_hp
         b *= hp / max_hp
@@ -82,7 +82,7 @@ class RobotSprite:
         ox, oy = self.animation_offset
         color = self.compute_color(self.robot.player_id, self.robot.hp)
         if self.square is None:
-            self.square = self.renderer.draw_grid_square(self.location, color)
+            self.square = self.renderer.draw_grid_object(self.location, type="circle", fill=color, width=0)
         self.renderer._win.coords(self.square, (x+ox, y+oy, rx+ox, ry+oy))
 
     def draw_bot_hp(self, delta):
@@ -215,15 +215,21 @@ class Render:
         self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 7/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
-                self.draw_grid_square((x,y), "white" if ("normal" in rg.loc_types((x,y))) else "black")
+                self.draw_grid_object((x,y), fill=("white" if ("normal" in rg.loc_types((x,y))) else "black"), width=0)
 
-    def draw_grid_square(self, loc, color):
+    def draw_grid_object(self, loc, type="square", **kargs):
         x, y = self.grid_to_xy(loc)
         rx, ry = self.square_bottom_corner((x,y))
-        item = self._win.create_rectangle(
-            x, y,
-            rx, ry,
-            fill=color, width=0)
+        if type == "square":
+            item = self._win.create_rectangle(
+                x, y,
+                rx, ry,
+                **kargs)
+        elif type == "circle":
+            item = self._win.create_oval(
+                x, y,
+                rx, ry,
+                **kargs)
         return item
 
     def draw_text(self, loc, text, color=None):
@@ -284,7 +290,7 @@ class Render:
         for y in range(self._settings.board_size):
             for x in range(self._settings.board_size):
                 loc = (x, y)
-                self.draw_grid_square(loc, self.determine_bg_color(loc))
+                self.draw_grid_object(loc, fill=self.determine_bg_color(loc), width=0)
         # draw text labels
         for y in range(self._settings.board_size):
             self.draw_text((y, 0), str(y), '#888')
