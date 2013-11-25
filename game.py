@@ -18,47 +18,41 @@ def init_settings(map_data):
     rg.set_settings(settings)
 
 class Player:
-    def __init__(self, code=None, robots=None):
+    def __init__(self, code=None, robot=None):
         if code is not None:
             self._mod = imp.new_module('usercode%d' % id(self))
             exec code in self._mod.__dict__
-            self._robots = None
-        elif robots is not None:
+            self._robot = None
+        elif robot is not None:
             self._mod = None
-            self._robots = robots
+            self._robot = robot
         else:
-            raise Exception('you need to provide code or a module')
-        self._cache = {}
+            raise Exception('you need to provide code or a robot')
 
-    def get_obj(self, class_name):
-        if self._robots is not None:
-            if class_name in self._robots:
-                return self._robots[class_name]
-
-        if class_name in self._cache:
-            return self._cache[class_name]
+    def get_robot(self):
+        if self._robot is not None:
+            return self._robot
 
         mod = defaultrobots
         if self._mod is not None:
-            if hasattr(self._mod, class_name):
-                if inspect.isclass(getattr(self._mod, class_name)):
+            if hasattr(self._mod, 'Robot'):
+                if inspect.isclass(getattr(self._mod, 'Robot')):
                     mod = self._mod
 
-        self._cache[class_name] = getattr(mod, class_name)()
-        return self._cache[class_name]
+        self._robot = getattr(mod, 'Robot')()
+        return self._robot
 
 class InternalRobot:
-    def __init__(self, location, hp, player_id, robot_id, field, robot_type):
+    def __init__(self, location, hp, player_id, robot_id, field):
         self.location = location
         self.hp = hp
         self.player_id = player_id
         self.robot_id = robot_id
         self.field = field
-        self.robot_type = robot_type
 
     def __repr__(self):
-        return '<%s: player: %d, hp: %d, type: %s>' % (
-            self.location, self.player_id, self.hp, self.robot_type
+        return '<%s: player: %d, hp: %d>' % (
+            self.location, self.player_id, self.hp
         )
 
     @staticmethod
@@ -165,27 +159,6 @@ class InternalRobot:
         for loc in rg.locs_around(self.location):
             self.call_attack(loc, action_table, damage=settings.suicide_damage)
 
-class RobotSnapshot:
-    """Wrapper for the state of a robot in a given turn
-    
-       since robots are always changing, this gives us a lightweight way to wrap a robot's state, action, and next state
-       (used with animation)
-    """
-    
-    def __init__(self, robot_obj, action=None):
-        self.robot_ref = robot_obj
-        self.location = robot_obj.location
-        self.hp = robot_obj.hp
-        self.player_id = robot_obj.player_id
-        self.action = action
-        # the following values are updated later with a call to set_next_values()
-        self.location_next = self.location
-        self.hp_next = self.hp
-    
-    def set_next_values(self):
-        self.location_next = self.robot_ref.location
-        self.hp_next = self.robot_ref.hp
-
 # just to make things easier
 class Field:
     def __init__(self, size):
@@ -209,13 +182,15 @@ class Game:
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
-        self._recent_activity_list = []
         self._unit_testing = unit_testing
         self._id_inc = 0
 
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
+            self.action_at = {}
+            self.last_locs = {}
+            self.last_hps = {}
 
         self.spawn_starting()
 
@@ -227,9 +202,9 @@ class Game:
     def spawn_starting(self):
         global settings
         for coord in settings.start1:
-            self.spawn_robot(0, coord, 'Robot')
+            self.spawn_robot(0, coord)
         for coord in settings.start2:
-            self.spawn_robot(1, coord, 'Robot')
+            self.spawn_robot(1, coord)
 
     def build_game_info(self):
         global settings
@@ -261,31 +236,32 @@ class Game:
         actions = {}
 
         for robot in self._robots:
-            user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
+            user_robot = self._players[robot.player_id].get_robot()
             for prop in settings.exposed_properties + settings.player_only_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
             try:
                 next_action = user_robot.act(game_info_copies[robot.player_id])
                 if not robot.is_valid_action(next_action):
-                    raise Exception('%s is not a valid action from %s' % (str(next_action), robot.location))
+                    raise Exception('Bot %d: %s is not a valid action from %s' % (robot.player_id + 1, str(next_action), robot.location))
             except Exception:
                 traceback.print_exc(file=sys.stdout)
                 next_action = ['guard']
             actions[robot] = next_action
-            self._recent_activity[robot.location] = RobotSnapshot(robot, next_action)
 
         commands = list(settings.valid_commands)
         commands.remove('guard')
         commands.remove('move')
         commands.insert(0, 'move')
 
+        self.last_locs = {}
+        self.last_hps = {}
         for cmd in commands:
             for robot, action in actions.iteritems():
                 if action[0] != cmd:
                     continue
 
                 old_loc = robot.location
-                old_hp = robot.hp
+                self.last_hps[old_loc] = robot.hp # save hp before actions are processed
                 try:
                     robot.issue_command(action, actions)
                 except Exception:
@@ -294,48 +270,29 @@ class Game:
                 if robot.location != old_loc:
                     if self._field[old_loc] is robot:
                         self._field[old_loc] = None
+                        self.last_locs[robot.location] = old_loc
                     self._field[robot.location] = robot
         return actions
 
     def robot_at_loc(self, loc):
         return self._field[loc]
 
-    def spawn_robot(self, player_id, loc, robot_type):
+    def spawn_robot(self, player_id, loc):
         if self.robot_at_loc(loc) is not None:
             return False
+
         robot_id = self.get_robot_id()
-        robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field, robot_type)
+        robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field)
         self._robots.append(robot)
         self._field[loc] = robot
-        self._recent_activity[loc] = RobotSnapshot(robot, ['spawn'])
-
-    def validate_spawns(self, spawns):
-        global settings
-
-        ok_spawns = list(settings.user_obj_types)
-        for spawn in spawns:
-            if not (spawn.endswith('Robot') and spawn in ok_spawns):
-                raise Exception('%s not a valid type of robot' % spawn)
-        if len(spawns) > settings.spawn_per_player:
-            spawns = spawns[:settings.spawn_per_player]
-        return spawns
 
     def spawn_robot_batch(self):
         global settings
 
         locs = random.sample(settings.spawn_coords, settings.spawn_per_player * 2)
         for player_id in (0, 1):
-            try:
-                commander = self._players[player_id].get_obj('Commander')
-                game_info = self.build_game_info()
-                spawns = commander.spawn(game_info)
-                spawns = self.validate_spawns(spawns)
-            except Exception:
-                traceback.print_exc(file=sys.stdout)
-                spawns = ['Robot'] * settings.spawn_per_player
-
-            for spawn_type in spawns:
-                self.spawn_robot(player_id, locs.pop(), spawn_type)
+            for i in range(settings.spawn_per_player):
+                self.spawn_robot(player_id, locs.pop())
 
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
@@ -349,7 +306,6 @@ class Game:
             self._robots.remove(robot)
             if self._field[robot.location] == robot:
                 self._field[robot.location] = None
-            self._recent_activity[robot.location] = RobotSnapshot(robot, ['dead'])
 
     def make_history(self, actions):
         global settings
@@ -368,7 +324,6 @@ class Game:
     def run_turn(self):
         global settings
         
-        self._recent_activity = Field(settings.board_size)
         actions = self.make_robots_act()
         self.remove_dead()
 
@@ -382,13 +337,21 @@ class Game:
             for i in (0, 1):
                 self.history[i].append(round_history[i])
 
-        for x in range(settings.board_size):
-            for y in range(settings.board_size):
-                loc = (x,y)
-                snapshot = self._recent_activity[loc]
-                if snapshot is not None:
-                    snapshot.set_next_values()
-        self._recent_activity_list.append(self._recent_activity)
+            self.action_at[self.turns] = {}
+            for robot, action in actions.iteritems():
+                newaction = {}
+                name = action[0]
+                loc = self.last_locs.get(robot.location, robot.location)
+                hp_start = self.last_hps.get(loc, robot.hp)
+                hp_end = robot.hp
+                newaction['name'] = name
+                newaction['target'] = action[1] if len(action) > 1 else None
+                newaction['hp'] = hp_start
+                newaction['hp_end'] = hp_end
+                newaction['loc'] = loc
+                newaction['loc_end'] = robot.location
+                newaction['player'] = robot.player_id
+                self.action_at[self.turns][loc] = newaction
 
         self.turns += 1
 
@@ -398,9 +361,11 @@ class Game:
             scores[robot.player_id] += 1
         return scores
 
-    def get_recent_activity(self, turn):
-        if turn > len(self._recent_activity_list):
-            return self._recent_activity_list[-1]
+    def get_robot_actions(self, turn):
+        global settings
+        if turn in self.action_at:
+            return self.action_at[turn]
         elif turn <= 0:
-            return self._recent_activity_list[0]
-        return self._recent_activity_list[turn-1]
+            return self.action_at[1]
+        else:
+            return self.action_at[settings.max_turns-1]

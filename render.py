@@ -11,17 +11,47 @@ def rgb_to_hex(r, g, b, normalized = True):
     else:
         return '#%02x%02x%02x' % (r, g, b)
 
+class HighlightSprite:
+    def __init__(self, loc, target, render):
+        self.location = loc
+        self.target = target
+        self.renderer = render
+        self.hlt_square = None
+        self.target_square = None
+    
+    def clear(self):
+        self.renderer.remove_object(self.hlt_square)
+        self.renderer.remove_object(self.target_square)
+        self.hlt_square = None
+        self.target_square = None
+    
+    def animate(self, delta=0):
+        # blink like a cursor
+        if self.location is not None:
+            if delta < 0.5:
+                if self.hlt_square is None:
+                    self.hlt_square = self.renderer.draw_grid_object(self.location, fill="#AAA", width=0)
+                if self.target is not None and self.target_square is None:
+                    self.target_square = self.renderer.draw_grid_object(self.target, fill="#AAF", width=0)
+            else:
+                self.clear()
+
 class RobotSprite:
-    def __init__(self, bot, render):
-        self.robot = bot
+    def __init__(self, action_info, render):
+        self.location       = action_info['loc']
+        self.location_next  = action_info['loc_end']
+        self.action         = action_info['name']
+        self.target         = action_info['target']
+        self.hp             = action_info['hp']
+        self.hp_next        = action_info['hp_end']
+        self.id             = action_info['player']
         self.renderer = render
         self.halfupdate = False
+        self.animation_offset = (0,0)
         # Tkinter objects
         self.square = None
         self.overlay = None
         self.text = None
-        self.animation_offset = (0,0)
-        self.location = self.robot.location
     
     def animate(self, delta=0):
         """Animate this sprite
@@ -30,39 +60,38 @@ class RobotSprite:
                 this allows animation logic to be separate from timing logic
         """
         delta = max(0, min(delta, 1))
-        bot_color = self.compute_color(self.robot.player_id, self.robot.hp)
+        bot_color = self.compute_color(self.id, self.hp)
         self.animation_offset = (0,0)
-        if self.robot.action[0] == 'move':
+        if self.action == 'move':
             # if normal move, start at bot location and move to next location
             # (note that first half of all move animations is the same)
-            if delta < 0.5 or self.robot.location_next == self.robot.action[1]:
-                x, y = self.robot.location
-                self.location = self.robot.location
-                tx, ty = self.robot.action[1]
+            if delta < 0.5 or self.location_next == self.target:
+                x, y = self.location
+                tx, ty = self.target
             # if we're halfway through this animation AND the movement didn't succeed, reverse it (bounce back)
             else:
                 # starting where we wanted to go
-                x, y = self.robot.action[1]
-                self.location = self.robot.action[1]
+                x, y = self.target
                 # and ending where we are now
-                tx, ty = self.robot.location
+                tx, ty = self.location
             dx = tx - x
             dy = ty - y
             off_x = dx*delta*self.renderer._blocksize
             off_y = dy*delta*self.renderer._blocksize
             self.animation_offset = (off_x, off_y)
-        elif self.robot.action[0] == 'attack':
+        elif self.action == 'attack':
+            if self.overlay is None:
+                self.overlay = self.renderer.draw_line(self.location, self.target, fill='orange', width=3.0, arrow=Tkinter.LAST)
+        elif self.action == 'guard':
             pass
-        elif self.robot.action[0] == 'guard':
+        elif self.action == 'suicide':
             pass
-        elif self.robot.action[0] == 'suicide':
+        elif self.action == 'spawn':
             pass
-        elif self.robot.action[0] == 'spawn':
+        elif self.action == 'dead':
             pass
-        elif self.robot.action[0] == 'dead':
-            pass
-        self.draw_bot(delta)
-        self.draw_bot_hp(delta)
+        self.draw_bot(delta, (x,y), bot_color)
+        self.draw_bot_hp(delta, (x,y))
 
     def compute_color(self, player, hp):
         max_hp = float(self.renderer._settings.robot_hp + 20)
@@ -76,20 +105,19 @@ class RobotSprite:
         b = max(b, 0)
         return rgb_to_hex(r, g, b)
     
-    def draw_bot(self, delta):
-        x, y = self.renderer.grid_to_xy(self.location)
+    def draw_bot(self, delta, loc, color):
+        x, y = self.renderer.grid_to_xy(loc)
         rx, ry = self.renderer.square_bottom_corner((x,y))
         ox, oy = self.animation_offset
-        color = self.compute_color(self.robot.player_id, self.robot.hp)
         if self.square is None:
             self.square = self.renderer.draw_grid_object(self.location, type="circle", fill=color, width=0)
         self.renderer._win.coords(self.square, (x+ox, y+oy, rx+ox, ry+oy))
 
-    def draw_bot_hp(self, delta):
-        x, y = self.renderer.grid_to_xy(self.location)
+    def draw_bot_hp(self, delta, loc):
+        x, y = self.renderer.grid_to_xy(loc)
         ox, oy = self.animation_offset
         tex_color = "#888"
-        val = self.robot.hp if delta < 0.5 else self.robot.hp_next
+        val = self.hp if delta < 0.5 else self.hp_next
         if self.text is None or (delta >= 0.5 and not self.halfupdate):
             self.text = self.renderer.draw_text(self.location, val, tex_color)
             self.halfupdate = True
@@ -99,6 +127,9 @@ class RobotSprite:
         self.renderer.remove_object(self.square)
         self.renderer.remove_object(self.overlay)
         self.renderer.remove_object(self.text)
+        self.square = None
+        self.overlay = None
+        self.text = None
 
 class Render:
     def __init__(self, game_inst, settings, block_size=25):
@@ -107,12 +138,13 @@ class Render:
         self._winsize = block_size * self._settings.board_size + 40
         self._game = game_inst
         self._paused = True
+        self._layers = {}
 
         self._master = Tkinter.Tk()
-        self._master.title('robot game')
+        self._master.title('Robot Game')
 
         width = self._winsize
-        height = self._winsize + self._blocksize * 7/4
+        height = self._winsize + self._blocksize * 11/4
         self._win = Tkinter.Canvas(self._master, width=width, height=height)
         self._win.pack()
 
@@ -125,8 +157,12 @@ class Render:
 
         self._turn = 1
                 
+        self._highlighted = None
+        self._highlighted_target = None
+        
         # Animation stuff (also see #render heading in settings.py)
         self._sprites = []
+        self._highlight_sprite = None
         self._t_paused = 0
         self._t_frame_start = 0
         self._t_next_frame = 0
@@ -134,9 +170,10 @@ class Render:
         self.update_frame_timing()
 
         self.draw_background()
-        self.update_title(self._turn, self._settings.max_turns)
+        self.update_title()
         self.update_sprites_new_turn()
         self.paint()
+
         self.callback()
         self._win.mainloop()
     
@@ -146,7 +183,9 @@ class Render:
 
     def change_turn(self, turns):
         self._turn = min(max(self._turn + turns, 1), self._game.turns)
-        self.update_title(self._turn, self._settings.max_turns)
+        self.update_title()
+        self._highlighted = None
+        self._highlighted_target = None
         self.update_sprites_new_turn()
         self.paint()
 
@@ -187,22 +226,42 @@ class Render:
         def pause():
             self.toggle_pause()
 
+        def onclick(event):
+            x = (event.x - 20) / self._blocksize
+            y = (event.y - 20) / self._blocksize
+            loc = (x, y)
+            if loc[0] >= 0 and loc[1] >= 0 and loc[0] < self._settings.board_size and loc[1] < self._settings.board_size:
+                if loc == self._highlighted:
+                    self._highlighted = None
+                else:
+                    self._highlighted = loc
+                action = self._game.get_robot_actions(self.current_turn()).get(loc)
+                if action is not None:
+                    self._highlighted_target = action.get("target", None)
+                else:
+                    self._highlighted_target = None
+                self.update_highlight_sprite()
+                self.update_title()
+
+        self._master.bind("<Button-1>", lambda e: onclick(e))
         self._master.bind('<Left>', lambda e: prev())
         self._master.bind('<Right>', lambda e: next())
         self._master.bind('<space>', lambda e: pause())
 
+        self.show_arrows = Tkinter.BooleanVar()
+
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
-        button_frame = Tkinter.Frame(frame)
-        self._toggle_button = Tkinter.Button(button_frame, text=u'\u25B6' if self._paused else u'\u25FC', command=self.toggle_pause)
+        arrows_box = Tkinter.Checkbutton(frame, text="Show Arrows", variable=self.show_arrows, command=self.paint)
+        arrows_box.pack()
+        self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
-        prev_button = Tkinter.Button(button_frame, text='<', command=prev)
+        prev_button = Tkinter.Button(frame, text='<', command=prev)
         prev_button.pack(side='left')
-        next_button = Tkinter.Button(button_frame, text='>', command=next)
+        next_button = Tkinter.Button(frame, text='>', command=next)
         next_button.pack(side='left')
-        restart_button = Tkinter.Button(button_frame, text='<<', command=restart)
+        restart_button = Tkinter.Button(frame, text='<<', command=restart)
         restart_button.pack(side='left')
-        button_frame.pack()
         self._time_slider = Tkinter.Scale(frame,
             from_=-self._settings.turn_interval/2,
             to_=self._settings.turn_interval/2,
@@ -212,7 +271,7 @@ class Render:
 
     def prepare_backdrop(self, win):
         self._win.create_rectangle(0, 0, self._winsize, self._winsize + self._blocksize, fill='#555', width=0)
-        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 7/4, fill='#333', width=0)
+        self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 15/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
                 self.draw_grid_object((x,y), fill=("white" if ("normal" in rg.loc_types((x,y))) else "black"), width=0)
@@ -222,13 +281,11 @@ class Render:
         rx, ry = self.square_bottom_corner((x,y))
         if type == "square":
             item = self._win.create_rectangle(
-                x, y,
-                rx, ry,
+                x, y, rx, ry,
                 **kargs)
         elif type == "circle":
             item = self._win.create_oval(
-                x, y,
-                rx, ry,
+                x, y, rx, ry,
                 **kargs)
         return item
 
@@ -239,12 +296,54 @@ class Render:
             text=text, font='TkFixedFont', fill=color)
         return item
 
-    def update_title(self, turns, max_turns):
+    def draw_line(self, src, dst, **kargs):
+        srcx, srcy = self.grid_to_xy(src)
+        dstx, dsty = self.grid_to_xy(dst)
+
+        item = self._win.create_line(srcx, srcy, dstx, dsty, **kargs)
+        return item
+
+    def current_turn(self):
+        return min(self._settings.max_turns-1, self._turn)
+
+    def update_title(self):
+        turns = self.current_turn()
+        max_turns = self._settings.max_turns
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
+        info = ''
+        currentAction = ''
+        if self._highlighted is not None:
+            squareinfo = self.get_square_info(self._highlighted)
+            if 'obstacle' in squareinfo:
+                info = 'Obstacle'
+            elif 'bot' in squareinfo:
+                actioninfo = squareinfo[1]
+                hp = actioninfo['hp']
+                team = actioninfo['player']
+                info = '%s Bot: %d HP' % (['Red', 'Green'][team], hp)
+                if actioninfo.get('name') is not None:
+                    currentAction += 'Current Action: %s' % (actioninfo['name'],)
+                    if self._highlighted_target is not None:
+                        currentAction += ' to %s' % (self._highlighted_target,)
+
+        lines = [
+            'Red: %d | Green: %d | Turn: %d/%d' % (red, green, turns, max_turns),
+            'Highlighted: %s; %s' % (self._highlighted, info),
+            currentAction
+        ]
         self._win.itemconfig(
-            self._label, text='Red: %d | green: %d | Turn: %d/%d' %
-            (red, green, turns, max_turns))
+            self._label, text='\n'.join(lines))
+
+    def get_square_info(self, loc):
+        if loc in self._settings.obstacles:
+            return ['obstacle']
+
+        all_bots = self._game.get_robot_actions(self.current_turn())
+        if loc in all_bots:
+            return ['bot', all_bots[loc]]
+
+        return ['normal']
 
     def update_slider_value(self):
         v = -self._time_slider.get()
@@ -267,23 +366,13 @@ class Render:
                     self.toggle_pause()
                 else:
                     self.update_frame_timing(self._t_next_frame)
-            subframe = float(now - self._t_frame_start) / float(self.slider_delay)
-            self.paint(subframe)
+        subframe = float((now - self._t_frame_start) % self.slider_delay) / float(self.slider_delay)
+        self.paint(subframe)
 
     def determine_bg_color(self, loc):
         if loc in self._settings.obstacles:
             return '#222'
         return 'white'
-
-    def get_robot(self, loc):
-        for index, color in enumerate(('red', 'green')):
-            for robot in self._game.history[index][self._turn - 1]:
-                if robot[0] == loc:
-                    if len(robot) == 3:
-                        return RobotData(loc, robot[1], index, robot[2])
-                    else:
-                        return RobotData(loc, robot[1], index, ['guard'])
-        return None
 
     def draw_background(self):
         # draw squares
@@ -301,17 +390,22 @@ class Render:
             sprite.clear()
         self._sprites = []
         
-        board_activity = self._game.get_recent_activity(self._turn)
-        for y in range(self._settings.board_size):
-            for x in range(self._settings.board_size):
-                loc = (x, y)
-                bot_data = board_activity[loc]
-                if bot_data is not None:
-                    self._sprites.append(RobotSprite(bot_data, self))
+        self.update_highlight_sprite()
+        bots_activity = self._game.get_robot_actions(self._turn)
+        for bot_data in bots_activity.values():
+            self._sprites.append(RobotSprite(bot_data, self))
+    
+    def update_highlight_sprite(self):
+        need_update = self._highlight_sprite is not None and self._highlight_sprite.location != self._highlighted
+        if self._highlight_sprite is not None or need_update:
+            self._highlight_sprite.clear()
+        self._highlight_sprite = HighlightSprite(self._highlighted, self._highlighted_target, self)
 
     def paint(self, subframe=0):
         for sprite in self._sprites:
-            sprite.animate(subframe)
+            sprite.animate(subframe if not self._paused else 0)
+        if self._highlight_sprite is not None:
+            self._highlight_sprite.animate(subframe)
     
     def grid_to_xy(self, loc):
         x,y = loc
