@@ -11,6 +11,14 @@ def rgb_to_hex(r, g, b, normalized = True):
     else:
         return '#%02x%02x%02x' % (r, g, b)
 
+def blend_colors(color1, color2, weight):
+    r1, g1, b1 = color1
+    r2, g2, b2 = color2
+    r = r1 * weight + r2 * (1-weight)
+    g = g1 * weight + g2 * (1-weight)
+    b = b1 * weight + b2 * (1-weight)
+    return (r, g, b)
+
 class HighlightSprite:
     def __init__(self, loc, target, render):
         self.location = loc
@@ -30,9 +38,11 @@ class HighlightSprite:
         if self.location is not None:
             if delta < 0.5:
                 if self.hlt_square is None:
-                    self.hlt_square = self.renderer.draw_grid_object(self.location, fill="#AAA", width=0)
+                    color = rgb_to_hex(*self.renderer._settings.highlight_color)
+                    self.hlt_square = self.renderer.draw_grid_object(self.location, fill=color, width=0)
                 if self.target is not None and self.target_square is None:
-                    self.target_square = self.renderer.draw_grid_object(self.target, fill="#AAF", width=0)
+                    color = rgb_to_hex(*self.renderer._settings.target_color)
+                    self.target_square = self.renderer.draw_grid_object(self.target, fill=color, width=0)
             else:
                 self.clear()
 
@@ -42,8 +52,8 @@ class RobotSprite:
         self.location_next  = action_info['loc_end']
         self.action         = action_info['name']
         self.target         = action_info['target']
-        self.hp             = action_info['hp']
-        self.hp_next        = action_info['hp_end']
+        self.hp             = max(0, action_info['hp'])
+        self.hp_next        = max(0, action_info['hp_end'])
         self.id             = action_info['player']
         self.renderer = render
         self.halfupdate = False
@@ -80,16 +90,21 @@ class RobotSprite:
             off_y = dy*delta*self.renderer._blocksize
             self.animation_offset = (off_x, off_y)
         elif self.action == 'attack':
-            if self.overlay is None:
-                self.overlay = self.renderer.draw_line(self.location, self.target, fill='orange', width=3.0, arrow=Tkinter.LAST)
+            x,y = self.location
+            if self.overlay is None and self.renderer.show_arrows.get():
+                offset = (self.renderer._blocksize/2,self.renderer._blocksize/2)
+                self.overlay = self.renderer.draw_line(self.location, self.target, fill='orange', offset=offset, width=3.0, arrow=Tkinter.LAST)
+            elif self.overlay is not None and not self.renderer.show_arrows.get():
+                self.renderer.remove_object(self.overlay)
+                self.overlay = None
         elif self.action == 'guard':
             pass
         elif self.action == 'suicide':
             pass
         elif self.action == 'spawn':
-            pass
+            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, 1-delta)
         elif self.action == 'dead':
-            pass
+            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, delta)
         self.draw_bot(delta, (x,y), bot_color)
         self.draw_bot_hp(delta, (x,y))
 
@@ -274,7 +289,8 @@ class Render:
         self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 15/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
-                self.draw_grid_object((x,y), fill=("white" if ("normal" in rg.loc_types((x,y))) else "black"), width=0)
+                rgb = self._settings.normal_color if "normal" in rg.loc_types((x,y)) else self._settings.obstacle_color
+                self.draw_grid_object((x,y), fill=rgb_to_hex(*rgb), width=0)
 
     def draw_grid_object(self, loc, type="square", **kargs):
         x, y = self.grid_to_xy(loc)
@@ -296,11 +312,12 @@ class Render:
             text=text, font='TkFixedFont', fill=color)
         return item
 
-    def draw_line(self, src, dst, **kargs):
+    def draw_line(self, src, dst, offset=(0,0), **kargs):
+        ox, oy = offset
         srcx, srcy = self.grid_to_xy(src)
         dstx, dsty = self.grid_to_xy(dst)
 
-        item = self._win.create_line(srcx, srcy, dstx, dsty, **kargs)
+        item = self._win.create_line(srcx+ox, srcy+oy, dstx+ox, dsty+oy, **kargs)
         return item
 
     def current_turn(self):
@@ -371,8 +388,8 @@ class Render:
 
     def determine_bg_color(self, loc):
         if loc in self._settings.obstacles:
-            return '#222'
-        return 'white'
+            return rgb_to_hex(*self._settings.obstacle_color)
+        return rgb_to_hex(*self._settings.normal_color)
 
     def draw_background(self):
         # draw squares
