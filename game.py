@@ -201,7 +201,7 @@ class Game:
         for coord in settings.start1:
             self.spawn_robot(0, coord)
         for coord in settings.start2:
-            self.spawn_robot(1, coord, 'Robot')
+            self.spawn_robot(1, coord)
 
     def build_game_info(self):
         global settings
