@@ -266,12 +266,14 @@ class Game:
                     robot.issue_command(action, actions)
                 except Exception:
                     traceback.print_exc(file=sys.stdout)
-                    action = actions[robot] = ['guard']
+                    actions[robot] = ['guard']
                 if robot.location != old_loc:
                     if self._field[old_loc] is robot:
                         self._field[old_loc] = None
                         self.last_locs[robot.location] = old_loc
                     self._field[robot.location] = robot
+                else:
+                    self.last_locs[robot.location] = robot.location
         return actions
 
     def robot_at_loc(self, loc):
@@ -285,6 +287,17 @@ class Game:
         robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field)
         self._robots.append(robot)
         self._field[loc] = robot
+        if self._record:
+            self.action_at[self.turns][loc] = {
+                "name": "spawn",
+                "target": None,
+                "hp": robot.hp,
+                "hp_end": robot.hp,
+                "loc": loc,
+                "loc_end": loc,
+                "player": player_id
+            }
+        return True
 
     def spawn_robot_batch(self):
         global settings
@@ -299,6 +312,10 @@ class Game:
             if self._field[loc] is not None:
                 self._robots.remove(self._field[loc])
                 self._field[loc] = None
+                if self._record:
+                    old_loc = self.last_locs.get(loc, loc)
+                    # simulate death by making this robot end with 0 HP in the actions log
+                    self.action_at[self.turns][old_loc] = {'hp_end': 0}
 
     def remove_dead(self):
         to_remove = [x for x in self._robots if x.hp <= 0]
@@ -323,9 +340,12 @@ class Game:
 
     def run_turn(self):
         global settings
-        
+
         actions = self.make_robots_act()
         self.remove_dead()
+
+        if self._record:
+            self.action_at[self.turns] = {}
 
         if not self._unit_testing:
             if self.turns % settings.spawn_every == 0:
@@ -337,21 +357,18 @@ class Game:
             for i in (0, 1):
                 self.history[i].append(round_history[i])
 
-            self.action_at[self.turns] = {}
             for robot, action in actions.iteritems():
-                newaction = {}
-                name = action[0]
                 loc = self.last_locs.get(robot.location, robot.location)
+                log_action = self.action_at[self.turns].get(loc, {})
                 hp_start = self.last_hps.get(loc, robot.hp)
-                hp_end = robot.hp
-                newaction['name'] = name
-                newaction['target'] = action[1] if len(action) > 1 else None
-                newaction['hp'] = hp_start
-                newaction['hp_end'] = hp_end
-                newaction['loc'] = loc
-                newaction['loc_end'] = robot.location
-                newaction['player'] = robot.player_id
-                self.action_at[self.turns][loc] = newaction
+                log_action['name']    = log_action.get('name', action[0])
+                log_action['target']  = action[1] if len(action) > 1 else None
+                log_action['hp']      = log_action.get('hp', hp_start)
+                log_action['hp_end']  = log_action.get('hp_end', robot.hp)
+                log_action['loc']     = log_action.get('loc',loc)
+                log_action['loc_end'] = log_action.get('loc_end',robot.location)
+                log_action['player']  = log_action.get('player',robot.player_id)
+                self.action_at[self.turns][loc] = log_action
 
         self.turns += 1
 

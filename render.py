@@ -56,7 +56,6 @@ class RobotSprite:
         self.hp_next        = max(0, action_info['hp_end'])
         self.id             = action_info['player']
         self.renderer = render
-        self.halfupdate = False
         self.animation_offset = (0,0)
         # Tkinter objects
         self.square = None
@@ -69,8 +68,16 @@ class RobotSprite:
            delta is between 0 and 1. it tells us how far along to render (0.5 is halfway through animation)
                 this allows animation logic to be separate from timing logic
         """
+        # fix delta to between 0 and 1
         delta = max(0, min(delta, 1))
         bot_color = self.compute_color(self.id, self.hp)
+        # if spawn, fade in
+        if self.action == 'spawn':
+            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, delta)
+        # if dying, fade out
+        elif self.hp_next <= 0:
+            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, 1-delta)
+        bot_color = rgb_to_hex(*bot_color)
         x,y = self.location
         self.animation_offset = (0,0)
         if self.action == 'move':
@@ -101,10 +108,6 @@ class RobotSprite:
             pass
         elif self.action == 'suicide':
             pass
-        elif self.action == 'spawn':
-            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, 1-delta)
-        elif self.action == 'dead':
-            bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, delta)
         self.draw_bot(delta, (x,y), bot_color)
         self.draw_bot_hp(delta, (x,y))
 
@@ -118,7 +121,7 @@ class RobotSprite:
         r = max(r, 0)
         g = max(g, 0)
         b = max(b, 0)
-        return rgb_to_hex(r, g, b)
+        return (r, g, b)
     
     def draw_bot(self, delta, loc, color):
         x, y = self.renderer.grid_to_xy(loc)
@@ -126,16 +129,17 @@ class RobotSprite:
         ox, oy = self.animation_offset
         if self.square is None:
             self.square = self.renderer.draw_grid_object(self.location, type="circle", layer=3, fill=color, width=0)
+        self.renderer._win.itemconfig(self.square, fill=color)
         self.renderer._win.coords(self.square, (x+ox, y+oy, rx+ox, ry+oy))
 
     def draw_bot_hp(self, delta, loc):
         x, y = self.renderer.grid_to_xy(loc)
         ox, oy = self.animation_offset
         tex_color = "#888"
-        val = self.hp if delta < 0.5 else self.hp_next
-        if self.text is None or (delta >= 0.5 and not self.halfupdate):
+        val = int(self.hp * (1-delta) + self.hp_next * delta)
+        if self.text is None:
             self.text = self.renderer.draw_text(self.location, val, tex_color)
-            self.halfupdate = True
+        self.renderer._win.itemconfig(self.text, text=val)
         self.renderer._win.coords(self.text, (x+ox+10, y+oy+10))
 
     def clear(self):
@@ -147,8 +151,9 @@ class RobotSprite:
         self.text = None
 
 class Render:
-    def __init__(self, game_inst, settings, block_size=25):
+    def __init__(self, game_inst, settings, animations, block_size=25):
         self._settings = settings
+        self.animations = animations
         self._blocksize = block_size
         self._winsize = block_size * self._settings.board_size + 40
         self._game = game_inst
@@ -400,7 +405,10 @@ class Render:
                 else:
                     self.update_frame_timing(self._t_next_frame)
         subframe = float((now - self._t_frame_start) % self.slider_delay) / float(self.slider_delay)
-        self.paint(subframe)
+        if self.animations:
+            self.paint(subframe)
+        else:
+            self.paint(0)
 
     def determine_bg_color(self, loc):
         if loc in self._settings.obstacles:
@@ -425,8 +433,12 @@ class Render:
         
         self.update_highlight_sprite()
         bots_activity = self._game.get_robot_actions(self._turn)
-        for bot_data in bots_activity.values():
-            self._sprites.append(RobotSprite(bot_data, self))
+        try:
+            for bot_data in bots_activity.values():
+                self._sprites.append(RobotSprite(bot_data, self))
+        except:
+            print bots_activity
+            raw_input()
     
     def update_highlight_sprite(self):
         need_update = self._highlight_sprite is not None and self._highlight_sprite.location != self._highlighted
