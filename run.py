@@ -20,9 +20,9 @@ parser.add_argument("-H", "--headless", action="store_true",
 parser.add_argument("-c", "--count", type=int,
                     default=1,
                     help="Game count, default: 1")
-parser.add_argument("-A", "--animate", action="store_true",
+parser.add_argument("-A", "--no-animate", action="store_false",
                     default=True,
-                    help="Enable animations in rendering. Default: True")
+                    help="Disable animations in rendering.")
 
 def make_player(fname):
     with open(fname) as player_code:
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     scores = []
 
     for i in xrange(args.count):
-        scores.append(play(players, not args.headless, args.animate))
+        scores.append(play(players, not args.headless, args.no_animate))
         print scores[-1]
 
     if args.count > 1:
