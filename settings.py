@@ -17,7 +17,7 @@ settings = {
     'default_rating': 1200,
 
     # user-scripting
-    'max_usercode_time': 300,
+    'max_usercode_time': 100,
     'exposed_properties': ('location', 'hp', 'player_id'),
     'player_only_properties': ('robot_id',),
     'user_obj_types': ('Robot',),
