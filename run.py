@@ -73,7 +73,7 @@ def task(data):
     print result
     return result
 
-def test_runs_concurently(args):
+def test_runs_concurrently(args):
     data = itertools.repeat(
         [
             args.usercode1,
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     runner = test_runs_sequentially
     if _is_multiprocessing_supported and args.count > 1:
-        runner = test_runs_concurently
+        runner = test_runs_concurrently
     scores = runner(args)
 
     if args.count > 1:
