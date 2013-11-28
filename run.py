@@ -28,12 +28,15 @@ parser.add_argument("-H", "--headless", action="store_true",
 parser.add_argument("-c", "--count", type=int,
                     default=1,
                     help="Game count, default: 1")
+parser.add_argument("-A", "--no-animate", action="store_false",
+                    default=True,
+                    help="Disable animations in rendering.")
 
 def make_player(fname):
     with open(fname) as player_code:
         return game.Player(player_code.read())
 
-def play(players, print_info=True):
+def play(players, print_info=True, animate_render=True):
     g = game.Game(*players, record_turns=True)
     for i in xrange(settings.max_turns):
         if print_info:
@@ -46,7 +49,7 @@ def play(players, print_info=True):
         # run headless
         import render
 
-        render.Render(g, game.settings)
+        render.Render(g, game.settings, animate_render)
         print g.history
 
     return g.get_scores()
@@ -56,19 +59,20 @@ def test_runs_sequentially(args):
     scores = []
     for i in xrange(args.count):
         scores.append(
-            play(players, not args.headless)
+            play(players, not args.headless, args.no_animate)
         )
         print scores[-1]
     return scores
 
 def task(data):
-    usercode1, usercode2, headless = data
+    usercode1, usercode2, headless, no_animate = data
     result = play(
         [
             make_player(usercode1),
             make_player(usercode2)
         ],
         not headless,
+        no_animate,
     )
     print result
     return result
@@ -79,6 +83,7 @@ def test_runs_concurrently(args):
             args.usercode1,
             args.usercode2,
             args.headless,
+            args.no_animate,
         ],
         args.count
     )
