@@ -1,11 +1,12 @@
 import Tkinter
-import game, rg
+import game
+import rg
 import time
 
 def millis():
     return int(time.time() * 1000)
 
-def rgb_to_hex(r, g, b, normalized = True):
+def rgb_to_hex(r, g, b, normalized=True):
     if normalized:
         return '#%02x%02x%02x' % (r*255, g*255, b*255)
     else:
@@ -26,13 +27,13 @@ class HighlightSprite:
         self.renderer = render
         self.hlt_square = None
         self.target_square = None
-    
+
     def clear(self):
         self.renderer.remove_object(self.hlt_square)
         self.renderer.remove_object(self.target_square)
         self.hlt_square = None
         self.target_square = None
-    
+
     def animate(self, delta=0):
         # blink like a cursor
         if self.location is not None:
@@ -48,23 +49,24 @@ class HighlightSprite:
 
 class RobotSprite:
     def __init__(self, action_info, render):
-        self.location       = action_info['loc']
-        self.location_next  = action_info['loc_end']
-        self.action         = action_info['name']
-        self.target         = action_info['target']
-        self.hp             = max(0, action_info['hp'])
-        self.hp_next        = max(0, action_info['hp_end'])
-        self.id             = action_info['player']
+        self.location = action_info['loc']
+        self.location_next = action_info['loc_end']
+        self.action = action_info['name']
+        self.target = action_info['target']
+        self.hp = max(0, action_info['hp'])
+        self.hp_next = max(0, action_info['hp_end'])
+        self.id = action_info['player']
         self.renderer = render
-        self.animation_offset = (0,0)
+        self.animation_offset = (0, 0)
+
         # Tkinter objects
         self.square = None
         self.overlay = None
         self.text = None
-    
+
     def animate(self, delta=0):
         """Animate this sprite
-           
+
            delta is between 0 and 1. it tells us how far along to render (0.5 is halfway through animation)
                 this allows animation logic to be separate from timing logic
         """
@@ -78,8 +80,8 @@ class RobotSprite:
         elif self.hp_next <= 0:
             bot_color = blend_colors(bot_color, self.renderer._settings.normal_color, 1-delta)
         bot_color = rgb_to_hex(*bot_color)
-        x,y = self.location
-        self.animation_offset = (0,0)
+        x, y = self.location
+        self.animation_offset = (0, 0)
         if self.action == 'move':
             # if normal move, start at bot location and move to next location
             # (note that first half of all move animations is the same)
@@ -99,7 +101,7 @@ class RobotSprite:
             self.animation_offset = (off_x, off_y)
         elif self.action == 'attack':
             if self.overlay is None and self.renderer.show_arrows.get():
-                offset = (self.renderer._blocksize/2,self.renderer._blocksize/2)
+                offset = (self.renderer._blocksize/2, self.renderer._blocksize/2)
                 self.overlay = self.renderer.draw_line(self.location, self.target, layer=4, fill='orange', offset=offset, width=3.0, arrow=Tkinter.LAST)
             elif self.overlay is not None and not self.renderer.show_arrows.get():
                 self.renderer.remove_object(self.overlay)
@@ -108,12 +110,12 @@ class RobotSprite:
             pass
         elif self.action == 'suicide':
             pass
-        self.draw_bot(delta, (x,y), bot_color)
-        self.draw_bot_hp(delta, (x,y))
+        self.draw_bot(delta, (x, y), bot_color)
+        self.draw_bot_hp(delta, (x, y))
 
     def compute_color(self, player, hp):
         max_hp = float(self.renderer._settings.robot_hp + 20)
-        r,g,b = self.renderer._settings.colors[player]
+        r, g, b = self.renderer._settings.colors[player]
         hp = float(hp + 20)
         r *= hp / max_hp
         g *= hp / max_hp
@@ -122,10 +124,10 @@ class RobotSprite:
         g = max(g, 0)
         b = max(b, 0)
         return (r, g, b)
-    
+
     def draw_bot(self, delta, loc, color):
         x, y = self.renderer.grid_to_xy(loc)
-        rx, ry = self.renderer.square_bottom_corner((x,y))
+        rx, ry = self.renderer.square_bottom_corner((x, y))
         ox, oy = self.animation_offset
         if self.square is None:
             self.square = self.renderer.draw_grid_object(self.location, type="circle", layer=3, fill=color, width=0)
@@ -176,10 +178,10 @@ class Render:
         self.create_controls(self._win, width, height)
 
         self._turn = 1
-                
+
         self._highlighted = None
         self._highlighted_target = None
-        
+
         # Animation stuff (also see #render heading in settings.py)
         self._sprites = []
         self._highlight_sprite = None
@@ -196,7 +198,7 @@ class Render:
 
         self.callback()
         self._win.mainloop()
-    
+
     def remove_object(self, obj):
         if obj is not None:
             self._win.delete(obj)
@@ -272,20 +274,26 @@ class Render:
 
         frame = Tkinter.Frame()
         win.create_window(width, height, anchor=Tkinter.SE, window=frame)
+
         arrows_box = Tkinter.Checkbutton(frame, text="Show Arrows", variable=self.show_arrows, command=self.paint)
         arrows_box.pack()
+
         self._toggle_button = Tkinter.Button(frame, text=u'\u25B6', command=self.toggle_pause)
         self._toggle_button.pack(side='left')
+
         prev_button = Tkinter.Button(frame, text='<', command=prev)
         prev_button.pack(side='left')
+
         next_button = Tkinter.Button(frame, text='>', command=next)
         next_button.pack(side='left')
+
         restart_button = Tkinter.Button(frame, text='<<', command=restart)
         restart_button.pack(side='left')
+
         self._time_slider = Tkinter.Scale(frame,
-            from_=-self._settings.turn_interval/2,
-            to_=self._settings.turn_interval/2,
-            orient=Tkinter.HORIZONTAL, borderwidth=0)
+                                          from_=-self._settings.turn_interval/2,
+                                          to_=self._settings.turn_interval/2,
+                                          orient=Tkinter.HORIZONTAL, borderwidth=0)
         self._time_slider.pack(fill=Tkinter.X)
         self._time_slider.set(0)
 
@@ -294,8 +302,8 @@ class Render:
         self._win.create_rectangle(0, self._winsize, self._winsize, self._winsize + self._blocksize * 15/4, fill='#333', width=0)
         for x in range(self._settings.board_size):
             for y in range(self._settings.board_size):
-                rgb = self._settings.normal_color if "normal" in rg.loc_types((x,y)) else self._settings.obstacle_color
-                self.draw_grid_object((x,y), fill=rgb_to_hex(*rgb), layer=1, width=0)
+                rgb = self._settings.normal_color if "normal" in rg.loc_types((x, y)) else self._settings.obstacle_color
+                self.draw_grid_object((x, y), fill=rgb_to_hex(*rgb), layer=1, width=0)
 
     def draw_grid_object(self, loc, type="square", layer=0, **kargs):
         layer_id = 'layer %d' % layer
@@ -304,7 +312,7 @@ class Render:
         tags.append(layer_id)
         kargs["tags"] = tags
         x, y = self.grid_to_xy(loc)
-        rx, ry = self.square_bottom_corner((x,y))
+        rx, ry = self.square_bottom_corner((x, y))
         if type == "square":
             item = self._win.create_rectangle(
                 x, y, rx, ry,
@@ -314,7 +322,7 @@ class Render:
                 x, y, rx, ry,
                 **kargs)
         return item
-    
+
     def update_layers(self):
         for layer in self._layers:
             self._win.tag_raise(layer)
@@ -328,7 +336,7 @@ class Render:
             text=text, font='TkFixedFont', fill=color, tags=[layer_id])
         return item
 
-    def draw_line(self, src, dst, offset=(0,0), layer=0, **kargs):
+    def draw_line(self, src, dst, offset=(0, 0), layer=0, **kargs):
         layer_id = 'layer %d' % layer
         self._layers[layer_id] = None
         tags = kargs.get("tags", [])
@@ -388,7 +396,7 @@ class Render:
         if v > 0:
             v = v * 20
         self.slider_delay = self._settings.turn_interval + v
-        
+
     def callback(self):
         self.update_slider_value()
         self.tick()
@@ -425,12 +433,12 @@ class Render:
         for y in range(self._settings.board_size):
             self.draw_text((y, 0), str(y), '#888')
             self.draw_text((0, y), str(y), '#888')
-    
+
     def update_sprites_new_turn(self):
         for sprite in self._sprites:
             sprite.clear()
         self._sprites = []
-        
+
         self.update_highlight_sprite()
         bots_activity = self._game.get_robot_actions(self._turn)
         try:
@@ -439,7 +447,7 @@ class Render:
         except:
             print bots_activity
             raw_input()
-    
+
     def update_highlight_sprite(self):
         need_update = self._highlight_sprite is not None and self._highlight_sprite.location != self._highlighted
         if self._highlight_sprite is not None or need_update:
@@ -452,11 +460,11 @@ class Render:
         if self._highlight_sprite is not None:
             self._highlight_sprite.animate(subframe)
         self.update_layers()
-        
+
     def grid_to_xy(self, loc):
-        x,y = loc
-        return  (x * self._blocksize + 20, y * self._blocksize + 20)
-    
+        x, y = loc
+        return (x * self._blocksize + 20, y * self._blocksize + 20)
+
     def square_bottom_corner(self, square_topleft):
-        x,y = square_topleft
+        x, y = square_topleft
         return (x + self._blocksize - 3, y + self._blocksize - 3)

@@ -188,7 +188,7 @@ class Game:
         self._record = record_turns
         if self._record:
             self.history = [[] for i in range(2)]
-            self.action_at = {}
+            self.action_at = dict((x, dict()) for x in range(settings.max_turns))
             self.last_locs = {}
             self.last_hps = {}
 
@@ -261,7 +261,7 @@ class Game:
                     continue
 
                 old_loc = robot.location
-                self.last_hps[old_loc] = robot.hp # save hp before actions are processed
+                self.last_hps[old_loc] = robot.hp  # save hp before actions are processed
                 try:
                     robot.issue_command(action, actions)
                 except Exception:
@@ -289,13 +289,13 @@ class Game:
         self._field[loc] = robot
         if self._record:
             self.action_at[self.turns][loc] = {
-                "name": "spawn",
-                "target": None,
-                "hp": robot.hp,
-                "hp_end": robot.hp,
-                "loc": loc,
-                "loc_end": loc,
-                "player": player_id
+                'name': 'spawn',
+                'target': None,
+                'hp': robot.hp,
+                'hp_end': robot.hp,
+                'loc': loc,
+                'loc_end': loc,
+                'player': player_id
             }
         return True
 
@@ -344,9 +344,6 @@ class Game:
         actions = self.make_robots_act()
         self.remove_dead()
 
-        if self._record:
-            self.action_at[self.turns] = {}
-
         if not self._unit_testing:
             if self.turns % settings.spawn_every == 0:
                 self.clear_spawn_points()
@@ -361,13 +358,13 @@ class Game:
                 loc = self.last_locs.get(robot.location, robot.location)
                 log_action = self.action_at[self.turns].get(loc, {})
                 hp_start = self.last_hps.get(loc, robot.hp)
-                log_action['name']    = log_action.get('name', action[0])
-                log_action['target']  = action[1] if len(action) > 1 else None
-                log_action['hp']      = log_action.get('hp', hp_start)
-                log_action['hp_end']  = log_action.get('hp_end', robot.hp)
-                log_action['loc']     = log_action.get('loc',loc)
-                log_action['loc_end'] = log_action.get('loc_end',robot.location)
-                log_action['player']  = log_action.get('player',robot.player_id)
+                log_action['name'] = log_action.get('name', action[0])
+                log_action['target'] = action[1] if len(action) > 1 else None
+                log_action['hp'] = log_action.get('hp', hp_start)
+                log_action['hp_end'] = log_action.get('hp_end', robot.hp)
+                log_action['loc'] = log_action.get('loc', loc)
+                log_action['loc_end'] = log_action.get('loc_end', robot.location)
+                log_action['player'] = log_action.get('player', robot.player_id)
                 self.action_at[self.turns][loc] = log_action
 
         self.turns += 1
