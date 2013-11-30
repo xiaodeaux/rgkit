@@ -96,3 +96,13 @@ class TestMove(base.BaseTestCase):
         assert(bot2)
         assert(bot3)
         assert(bot4)
+
+    def test_double_collision(self):
+        [bot1], [bot2, bot3] = self.simulate(
+            [RobotMoveRight, RobotMoveUp],
+            [(9, 10)], [(9, 10)],
+            [(9, 11), (10, 11)], [(9, 11), (10, 11)])
+
+        assert(bot1.hp == 40)
+        assert(bot2.hp == 45)
+        assert(bot3.hp == 45)
