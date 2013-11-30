@@ -46,7 +46,7 @@ Other functions
 '''
 
 class MapEditor:
-    def __init__(self, blocksize, padding, map_file=None):
+    def __init__(self, blocksize, padding, map_file="newmap.py"):
         global settings
 
         self._blocksize = blocksize
@@ -157,7 +157,7 @@ class MapEditor:
             if color in label_mapping and label_mapping[color] is not None:
                 coords[label_mapping[color]].append((i % settings.board_size, int(i / settings.board_size)))
 
-        with open('newmap.py', 'w') as f:
+        with open(self._map_file, 'w') as f:
             f.write(str(coords))
             print 'saved!'
 
