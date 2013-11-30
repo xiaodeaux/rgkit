@@ -41,7 +41,7 @@ Just for yourself
 Other functions
 ===============
 [d] fill board with selected color
-[f] save map data to newmap.py
+[f] save map data to map file provided or newmap.py by default
 [i] invert black and white colors
 '''
 
