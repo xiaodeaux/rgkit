@@ -4,7 +4,7 @@ import ast
 import Tkinter
 import sys
 
-from rgkit.settings import settings
+import settings
 
 BLOCKSIZE = 20
 PADDING = 4
@@ -56,7 +56,7 @@ class MapEditor:
         global settings
 
         root = Tkinter.Tk()
-        size = (self._blocksize + self._padding) * settings.board_size + self._padding * 2 + 40
+        size = (self._blocksize + self._padding) * 19 + self._padding * 2 + 40
 
         self._canvas = Tkinter.Canvas(root, width=size, height=size)
         self._rect_items = []
@@ -73,8 +73,8 @@ class MapEditor:
         root.mainloop()
 
     def prepare_backdrop(self, size):
-        for y in range(settings.board_size):
-            for x in range(settings.board_size):
+        for y in range(19):
+            for x in range(19):
                 item = self._canvas.create_rectangle(
                     x * (self._blocksize + self._padding) + self._padding + 20, y * (self._blocksize + self._padding) + self._padding + 20,
                     (x+1) * (self._blocksize + self._padding) + 20, (y+1) * (self._blocksize + self._padding) + 20,
@@ -139,7 +139,7 @@ class MapEditor:
 
             self.set_color(color)
             for coord in map_data[label]:
-                self.paint_square(item_id=coord[0] + settings.board_size * coord[1])
+                self.paint_square(item_id=coord[0] + 19 * coord[1])
 
     def save_map(self):
         global settings
@@ -153,7 +153,7 @@ class MapEditor:
 
         for i, color in enumerate(self._colors):
             if color in label_mapping and label_mapping[color] is not None:
-                coords[label_mapping[color]].append((i % settings.board_size, int(i / settings.board_size)))
+                coords[label_mapping[color]].append((i % 19, int(i / 19)))
 
         with open('newmap.py', 'w') as f:
             f.write(str(coords))
