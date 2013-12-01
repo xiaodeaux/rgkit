@@ -4,7 +4,7 @@ import ast
 import Tkinter
 import sys
 
-from rgkit.settings import settings
+from settings import settings, AttrDict
 
 BLOCKSIZE = 20
 PADDING = 4
@@ -41,12 +41,14 @@ Just for yourself
 Other functions
 ===============
 [d] fill board with selected color
-[f] save map data to newmap.py
+[f] save map data to map file provided or newmap.py by default
 [i] invert black and white colors
 '''
 
 class MapEditor:
-    def __init__(self, blocksize, padding, map_file=None):
+    def __init__(self, blocksize, padding, map_file="newmap.py"):
+        global settings
+
         self._blocksize = blocksize
         self._padding = padding
         self._map_file = map_file
@@ -155,7 +157,7 @@ class MapEditor:
             if color in label_mapping and label_mapping[color] is not None:
                 coords[label_mapping[color]].append((i % settings.board_size, int(i / settings.board_size)))
 
-        with open('newmap.py', 'w') as f:
+        with open(self._map_file, 'w') as f:
             f.write(str(coords))
             print 'saved!'
 
