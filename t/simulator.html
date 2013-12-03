@@ -1,0 +1,19 @@
+$def with (content)
+<!doctype html>
+<html>
+    <head>
+        <title>robot game simulator</title>
+        <link rel='stylesheet' type='text/css' href='static/main.css'/>
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css"/>
+    </head>
+    <body>
+        <div class='heading clearfix'>
+            <span class='logo left'>rg</span>
+            <a class='link left' href='#'><i class='fa fa-wrench'></i> Robots</a>
+            <a class='link left' href='#'><i class='fa fa-flask'></i> Simulator</a>
+        </div>
+        <div class='body'>
+            $:content
+        </div>
+    </body>
+</html>

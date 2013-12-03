@@ -8,7 +8,6 @@ import rg
 import defaultrobots
 from settings import settings, AttrDict
 
-
 def init_settings(map_data):
     global settings
     settings.spawn_coords = map_data['spawn']
@@ -18,47 +17,41 @@ def init_settings(map_data):
     rg.set_settings(settings)
 
 class Player:
-    def __init__(self, code=None, robots=None):
+    def __init__(self, code=None, robot=None):
         if code is not None:
             self._mod = imp.new_module('usercode%d' % id(self))
             exec code in self._mod.__dict__
-            self._robots = None
-        elif robots is not None:
+            self._robot = None
+        elif robot is not None:
             self._mod = None
-            self._robots = robots
+            self._robot = robot
         else:
-            raise Exception('you need to provide code or a module')
-        self._cache = {}
+            raise Exception('you need to provide code or a robot')
 
-    def get_obj(self, class_name):
-        if self._robots is not None:
-            if class_name in self._robots:
-                return self._robots[class_name]
-
-        if class_name in self._cache:
-            return self._cache[class_name]
+    def get_robot(self):
+        if self._robot is not None:
+            return self._robot
 
         mod = defaultrobots
         if self._mod is not None:
-            if hasattr(self._mod, class_name):
-                if inspect.isclass(getattr(self._mod, class_name)):
+            if hasattr(self._mod, 'Robot'):
+                if inspect.isclass(getattr(self._mod, 'Robot')):
                     mod = self._mod
 
-        self._cache[class_name] = getattr(mod, class_name)()
-        return self._cache[class_name]
+        self._robot = getattr(mod, 'Robot')()
+        return self._robot
 
 class InternalRobot:
-    def __init__(self, location, hp, player_id, robot_id, field, robot_type):
+    def __init__(self, location, hp, player_id, robot_id, field):
         self.location = location
         self.hp = hp
         self.player_id = player_id
         self.robot_id = robot_id
         self.field = field
-        self.robot_type = robot_type
 
     def __repr__(self):
-        return '<%s: player: %d, hp: %d, type: %s>' % (
-            self.location, self.player_id, self.hp, self.robot_type
+        return '<%s: player: %d, hp: %d>' % (
+            self.location, self.player_id, self.hp
         )
 
     @staticmethod
@@ -174,13 +167,13 @@ class Field:
         try:
             return self.field[int(point[1])][int(point[0])]
         except TypeError:
-            print point[1], point[0]
+            print 'TypeError reading from field coordinates %s, %s' % (str(point[1]), str(point[0]))
 
     def __setitem__(self, point, v):
         try:
             self.field[int(point[1])][int(point[0])] = v
         except TypeError:
-            print point[1], point[0]
+            print 'TypeError writing to field coordinates %s, %s' % (str(point[1]), str(point[0]))
 
 class Game:
     def __init__(self, player1, player2, record_turns=False, unit_testing=False):
@@ -193,7 +186,7 @@ class Game:
 
         self._record = record_turns
         if self._record:
-            self.history = [[] for i in range(2)]
+            self.history = []
 
         self.spawn_starting()
 
@@ -205,20 +198,19 @@ class Game:
     def spawn_starting(self):
         global settings
         for coord in settings.start1:
-            self.spawn_robot(0, coord, 'Robot')
+            self.spawn_robot(0, coord)
         for coord in settings.start2:
-            self.spawn_robot(1, coord, 'Robot')
+            self.spawn_robot(1, coord)
 
     def build_game_info(self):
         global settings
+
+        props = settings.exposed_properties + settings.player_only_properties
         return AttrDict({
             'robots': dict((
-                y.location,
-                AttrDict(dict(
-                    (x, getattr(y, x)) for x in
-                    (settings.exposed_properties + settings.player_only_properties)
-                ))
-            ) for y in self._robots),
+                    y.location,
+                    AttrDict(dict((x, getattr(y, x)) for x in props))
+                ) for y in self._robots),
             'turn': self.turns,
         })
 
@@ -239,7 +231,7 @@ class Game:
         actions = {}
 
         for robot in self._robots:
-            user_robot = self._players[robot.player_id].get_obj(robot.robot_type)
+            user_robot = self._players[robot.player_id].get_robot()
             for prop in settings.exposed_properties + settings.player_only_properties:
                 setattr(user_robot, prop, getattr(robot, prop))
 
@@ -278,41 +270,21 @@ class Game:
     def robot_at_loc(self, loc):
         return self._field[loc]
 
-    def spawn_robot(self, player_id, loc, robot_type):
+    def spawn_robot(self, player_id, loc):
         if self.robot_at_loc(loc) is not None:
             return False
         robot_id = self.get_robot_id()
-        robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field, robot_type)
+        robot = InternalRobot(loc, settings.robot_hp, player_id, robot_id, self._field)
         self._robots.append(robot)
         self._field[loc] = robot
-
-    def validate_spawns(self, spawns):
-        global settings
-
-        ok_spawns = list(settings.user_obj_types)
-        for spawn in spawns:
-            if not (spawn.endswith('Robot') and spawn in ok_spawns):
-                raise Exception('%s not a valid type of robot' % spawn)
-        if len(spawns) > settings.spawn_per_player:
-            spawns = spawns[:settings.spawn_per_player]
-        return spawns
 
     def spawn_robot_batch(self):
         global settings
 
         locs = random.sample(settings.spawn_coords, settings.spawn_per_player * 2)
         for player_id in (0, 1):
-            try:
-                commander = self._players[player_id].get_obj('Commander')
-                game_info = self.build_game_info()
-                spawns = commander.spawn(game_info)
-                spawns = self.validate_spawns(spawns)
-            except Exception:
-                traceback.print_exc(file=sys.stdout)
-                spawns = ['Robot'] * settings.spawn_per_player
-
-            for spawn_type in spawns:
-                self.spawn_robot(player_id, locs.pop(), spawn_type)
+            for i in range(settings.spawn_per_player):
+                self.spawn_robot(player_id, locs.pop())
 
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
@@ -330,15 +302,14 @@ class Game:
     def make_history(self, actions):
         global settings
 
-        robots = [[] for i in range(2)]
+        robots = []
         for robot in self._robots:
-            robot_info = []
-            for prop in settings.exposed_properties:
-                if prop != 'player_id':
-                    robot_info.append(getattr(robot, prop))
+            robot_info = {}
+            for prop in settings.exposed_properties + settings.player_only_properties:
+                robot_info[prop] = getattr(robot, prop)
             if robot in actions:
-                robot_info.append(actions[robot])
-            robots[robot.player_id].append(robot_info)
+                robot_info['action'] = actions[robot]
+            robots.append(robot_info)
         return robots
 
     def run_turn(self):
@@ -353,9 +324,7 @@ class Game:
                 self.spawn_robot_batch()
 
         if self._record:
-            round_history = self.make_history(actions)
-            for i in (0, 1):
-                self.history[i].append(round_history[i])
+            self.history.append(self.make_history(actions))
 
         self.turns += 1
 
