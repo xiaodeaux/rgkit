@@ -34,11 +34,10 @@ class Player:
 
         mod = defaultrobots
         if self._mod is not None:
-            if hasattr(self._mod, 'Robot'):
-                if inspect.isclass(getattr(self._mod, 'Robot')):
-                    mod = self._mod
+            if 'Robot' in self._mod.__dict__:
+                mod = self._mod
 
-        self._robot = getattr(mod, 'Robot')()
+        self._robot = mod.__dict__['Robot']()
         return self._robot
 
 class InternalRobot:
@@ -205,12 +204,14 @@ class Game:
     def build_game_info(self):
         global settings
 
+        # concatenate arrays outside loop, not inside
         props = settings.exposed_properties + settings.player_only_properties
+
         return AttrDict({
             'robots': dict((
-                    y.location,
-                    AttrDict(dict((x, getattr(y, x)) for x in props))
-                ) for y in self._robots),
+                y.location,
+                AttrDict(dict((x, getattr(y, x)) for x in props))
+            ) for y in self._robots),
             'turn': self.turns,
         })
 
@@ -292,8 +293,13 @@ class Game:
                 self._robots.remove(self._field[loc])
                 self._field[loc] = None
 
+    def flag_dead(self):
+        for robot in self._robots:
+            if robot.hp < 0:
+                robot.hp = 0
+
     def remove_dead(self):
-        to_remove = [x for x in self._robots if x.hp <= 0]
+        to_remove = [x for x in self._robots if x.hp == 0]
         for robot in to_remove:
             self._robots.remove(robot)
             if self._field[robot.location] == robot:
@@ -316,7 +322,7 @@ class Game:
         global settings
 
         actions = self.make_robots_act()
-        self.remove_dead()
+        self.flag_dead()
 
         if not self._unit_testing:
             if self.turns % settings.spawn_every == 0:
@@ -326,6 +332,7 @@ class Game:
         if self._record:
             self.history.append(self.make_history(actions))
 
+        self.remove_dead()
         self.turns += 1
 
     def get_scores(self):
