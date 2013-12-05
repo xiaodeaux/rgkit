@@ -289,8 +289,7 @@ class Game:
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
             if self._field[loc] is not None:
-                self._robots.remove(self._field[loc])
-                self._field[loc] = None
+                self._field[loc].hp = 0
 
     def remove_dead(self):
         to_remove = [x for x in self._robots if x.hp <= 0]
@@ -317,15 +316,15 @@ class Game:
 
         actions = self.make_robots_act()
 
-        if self._record:
-            self.history.append(self.make_history(actions))
-
-        self.remove_dead()
-
         if not self._unit_testing:
             if self.turns % settings.spawn_every == 0:
                 self.clear_spawn_points()
                 self.spawn_robot_batch()
+
+        if self._record:
+            self.history.append(self.make_history(actions))
+
+        self.remove_dead()
 
         self.turns += 1
 
