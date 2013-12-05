@@ -290,8 +290,7 @@ class Game:
     def clear_spawn_points(self):
         for loc in settings.spawn_coords:
             if self._field[loc] is not None:
-                self._robots.remove(self._field[loc])
-                self._field[loc] = None
+                self._field[loc].hp = 0
 
     def flag_dead(self):
         for robot in self._robots:
