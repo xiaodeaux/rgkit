@@ -208,9 +208,9 @@ class Game:
         props = settings.exposed_properties + settings.player_only_properties
         return AttrDict({
             'robots': dict((
-                    y.location,
-                    AttrDict(dict((x, getattr(y, x)) for x in props))
-                ) for y in self._robots),
+                y.location,
+                AttrDict(dict((x, getattr(y, x)) for x in props))
+            ) for y in self._robots),
             'turn': self.turns,
         })
 
@@ -316,15 +316,16 @@ class Game:
         global settings
 
         actions = self.make_robots_act()
+
+        if self._record:
+            self.history.append(self.make_history(actions))
+
         self.remove_dead()
 
         if not self._unit_testing:
             if self.turns % settings.spawn_every == 0:
                 self.clear_spawn_points()
                 self.spawn_robot_batch()
-
-        if self._record:
-            self.history.append(self.make_history(actions))
 
         self.turns += 1
 
