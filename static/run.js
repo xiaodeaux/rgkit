@@ -3,7 +3,7 @@
   var fillDropdown, loadGame;
 
   fillDropdown = function() {
-    return $.getJSON('/getnames', function(data) {
+    return $.getJSON('getnames', function(data) {
       return $('#names1, #names2').each(function() {
         var drop, file, _i, _len, _results;
         drop = $(this);
@@ -239,7 +239,7 @@
       cont.find('.name1').text(name1);
       return cont.find('.name2').text(name2);
     };
-    url = '/run/' + name1 + '/' + name2 + '/1';
+    url = 'run/' + name1 + '/' + name2 + '/1';
     return $.getJSON(url, function(data) {
       var cont, output;
       if ('error' in data) {
@@ -287,7 +287,7 @@
       output += 'Overall: {0}-{1}; {2} draws'.f(wins1, wins2, draws);
       return cont.find('.output').text(output);
     };
-    url = '/run/' + name1 + '/' + name2 + '/100';
+    url = 'run/' + name1 + '/' + name2 + '/10';
     return $.getJSON(url, function(data) {
       var cont, output;
       if ('error' in data) {

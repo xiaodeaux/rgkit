@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import web
 from web import form
 import os
@@ -11,6 +13,7 @@ import multiprocessing
 urls = (
     '/', 'PageIndex',
     '/getnames', 'PageGetNames',
+    '/python', 'Python',
     '/run/(.*?)/(.*?)/(\\d*)', 'PageRun'
 )
 
@@ -55,6 +58,11 @@ class PageGetNames:
         files = ['.'.join(x.split('.')[:-1]) for x in files]
         return json.dumps(files)
 
+class Python:
+    def GET(self):
+        import sys
+        return sys.version_info
+
 def err(s):
     return json.dumps({'error': s})
 
@@ -94,7 +102,6 @@ def run_match(fname1, fname2):
 def run_match_pool_worker(fname1, fname2, queue, count):
     result = run_match(fname1, fname2)
     queue.put(result['scores'])
-    print count
 
 class PageRun:
     def GET(self, name1, name2, count):
@@ -109,7 +116,7 @@ class PageRun:
         if int(count) == 1:
             return json.dumps(run_match('robots/%s' % name1, 'robots/%s' % name2))
 
-        pool = multiprocessing.Pool(processes=5)
+        pool = multiprocessing.Pool(multiprocessing.cpu_count())
         queue = multiprocessing.Manager().Queue()
 
         params = ['robots/%s' % name1, 'robots/%s' % name2, queue]
@@ -117,7 +124,9 @@ class PageRun:
             pool.apply_async(run_match_pool_worker, args=(params + [i]))
 
         pool.close()
+
         pool.join()
+
 
         def queue_get():
             try:
