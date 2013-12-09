@@ -1,3 +1,6 @@
-# rgkit -- Testing kit for [robot game](http://robotgame.org) [![Build Status](https://travis-ci.org/brandonhsiao/rgkit.png?branch=master)](https://travis-ci.org/brandonhsiao/rgkit) #
+rgkit -- Testing kit for [robot game](http://robotgame.whitehalmos.org)
+========================
 
-Please see this [link](http://robotgame.org/kit) for the instructions.
+[![Build Status](https://travis-ci.org/WhiteHalmos/rgkit.png?branch=master)](https://travis-ci.org/WhiteHalmos/rgkit)
+
+Please see this [link](http://robotgame.whitehalmos.org/kit) for the instructions.
