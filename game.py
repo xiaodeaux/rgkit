@@ -2,6 +2,11 @@ import inspect
 import random
 import sys
 import traceback
+try:
+    import threading as _threading
+    _threading  # for pyflakes
+except ImportError:
+    import dummy_threading as _threading
 import imp
 ###
 import rg
@@ -176,19 +181,43 @@ class Field:
         except TypeError:
             print point[1], point[0]
 
+class PatientList(list):
+    """ a list which blocks access to items which have not been set until they are """
+    def __init__(self, _events):
+        self._events = _events
+
+    def forced_get(self, *args):
+        return super(PatientList, self).__getitem__(*args)
+
+    def __getitem__(self, key):
+        if key >= len(self._events):
+            super(PatientList, self).__getitem__(key)  # should raise an IndexError
+            assert False, "If you see this, then %s has been misused. \
+                    The event list contained less items than the current \
+                    length of the list: %d" % (self.__class__.__name__, len(self))
+        self._events[key].wait()
+        return super(PatientList, self).__getitem__(key)
+
 class Game:
-    def __init__(self, player1, player2, record_turns=False, unit_testing=False):
+    def __init__(self, player1, player2, record_turns=False, unit_testing=False, print_info=False):
         self._players = (player1, player2)
         self.turns = 0
         self._robots = []
         self._field = Field(settings.board_size)
         self._unit_testing = unit_testing
         self._id_inc = 0
+        self.print_info = print_info
+        self.turns_running_lock = _threading.Lock()
+        self.per_turn_events = [_threading.Event() for x in xrange(settings.max_turns)]
+        self.per_turn_events[0].set()
+        self.turn_runner = None
 
         self._record = record_turns
         if self._record:
-            self.history = [[] for i in range(2)]
-            self.action_at = dict((x, dict()) for x in range(settings.max_turns))
+            self.history = [PatientList(self.per_turn_events) for i in range(2)]
+            self.action_at = PatientList(self.per_turn_events)
+            self._unsafe_action_at = [dict() for x in xrange(settings.max_turns)]
+            self.action_at.extend(self._unsafe_action_at)
             self.last_locs = {}
             self.last_hps = {}
 
@@ -288,7 +317,7 @@ class Game:
         self._robots.append(robot)
         self._field[loc] = robot
         if self._record:
-            self.action_at[self.turns][loc] = {
+            self.action_at.forced_get(self.turns)[loc] = {
                 'name': 'spawn',
                 'target': None,
                 'hp': robot.hp,
@@ -315,7 +344,7 @@ class Game:
                 if self._record:
                     old_loc = self.last_locs.get(loc, loc)
                     # simulate death by making this robot end with 0 HP in the actions log
-                    self.action_at[self.turns][old_loc] = {'hp_end': 0}
+                    self.action_at.forced_get(self.turns)[old_loc] = {'hp_end': 0}
 
     def remove_dead(self):
         to_remove = [x for x in self._robots if x.hp <= 0]
@@ -340,6 +369,8 @@ class Game:
 
     def run_turn(self):
         global settings
+        if self.print_info:
+            print (' running turn %d ' % (self.turns + 1)).center(70, '-')
 
         actions = self.make_robots_act()
         self.remove_dead()
@@ -356,7 +387,7 @@ class Game:
 
             for robot, action in actions.iteritems():
                 loc = self.last_locs.get(robot.location, robot.location)
-                log_action = self.action_at[self.turns].get(loc, {})
+                log_action = self.action_at.forced_get(self.turns).get(loc, {})
                 hp_start = self.last_hps.get(loc, robot.hp)
                 log_action['name'] = log_action.get('name', action[0])
                 log_action['target'] = action[1] if len(action) > 1 else None
@@ -365,11 +396,26 @@ class Game:
                 log_action['loc'] = log_action.get('loc', loc)
                 log_action['loc_end'] = log_action.get('loc_end', robot.location)
                 log_action['player'] = log_action.get('player', robot.player_id)
-                self.action_at[self.turns][loc] = log_action
+                self.action_at.forced_get(self.turns)[loc] = log_action
 
         self.turns += 1
+        self.per_turn_events[self.turns-1].set()
+
+    def run_all_turns(self, use_separate_thread):
+        if use_separate_thread:
+            self.turn_runner = _threading.Thread(target=self.finish_running_turns_if_necessary)
+            self.turn_runner.daemon = True
+            self.turn_runner.start()
+        else:
+            self.finish_running_turns_if_necessary()
+
+    def finish_running_turns_if_necessary(self):
+        with self.turns_running_lock:
+            while self.turns < settings.max_turns:
+                self.run_turn()
 
     def get_scores(self):
+        self.finish_running_turns_if_necessary()
         scores = [0, 0]
         for robot in self._robots:
             scores[robot.player_id] += 1
@@ -377,9 +423,8 @@ class Game:
 
     def get_robot_actions(self, turn):
         global settings
-        if turn in self.action_at:
-            return self.action_at[turn]
-        elif turn <= 0:
+        if turn <= 0:
             return self.action_at[1]
-        else:
+        elif turn >= settings.max_turns:
             return self.action_at[settings.max_turns-1]
+        return self.action_at[turn]

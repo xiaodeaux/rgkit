@@ -22,26 +22,27 @@ parser.add_argument("usercode2",
                     help="File containing second robot class definition.")
 parser.add_argument("-m", "--map", help="User-specified map file.",
                     default=os.path.join(os.path.dirname(__file__), 'maps/default.py'))
-parser.add_argument("-H", "--headless", action="store_true",
-                    default=False,
-                    help="Disable rendering game output.")
 parser.add_argument("-c", "--count", type=int,
                     default=1,
                     help="Game count, default: 1")
 parser.add_argument("-A", "--no-animate", action="store_false",
                     default=True,
                     help="Disable animations in rendering.")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-H", "--headless", action="store_true",
+                   default=False,
+                   help="Disable rendering game output.")
+group.add_argument("-T", "--play-in-thread", action="store_true",
+                   default=False,
+                   help="Separate GUI thread from the one which computes robot moves.")
+
 
 def make_player(fname):
     with open(fname) as player_code:
         return game.Player(player_code.read())
 
-def play(players, print_info=True, animate_render=True):
-    g = game.Game(*players, record_turns=True)
-    for i in xrange(settings.max_turns):
-        if print_info:
-            print (' running turn %d ' % (g.turns + 1)).center(70, '-')
-        g.run_turn()
+def play(players, print_info=True, animate_render=True, play_in_thread=False):
+    g = game.Game(*players, print_info=print_info, record_turns=True)
 
     if print_info:
         # only import render if we need to render the game;
@@ -49,6 +50,7 @@ def play(players, print_info=True, animate_render=True):
         # run headless
         import render
 
+        g.run_all_turns(play_in_thread)
         render.Render(g, game.settings, animate_render)
         print g.history
 
@@ -59,13 +61,13 @@ def test_runs_sequentially(args):
     scores = []
     for i in xrange(args.count):
         scores.append(
-            play(players, not args.headless, args.no_animate)
+            play(players, not args.headless, args.no_animate, args.play_in_thread)
         )
         print scores[-1]
     return scores
 
 def task(data):
-    usercode1, usercode2, headless, no_animate = data
+    usercode1, usercode2, headless, no_animate, play_in_thread = data
     result = play(
         [
             make_player(usercode1),
@@ -73,6 +75,7 @@ def task(data):
         ],
         not headless,
         no_animate,
+        play_in_thread,
     )
     print result
     return result
@@ -84,6 +87,7 @@ def test_runs_concurrently(args):
             args.usercode2,
             args.headless,
             args.no_animate,
+            args.play_in_thread,
         ],
         args.count
     )
