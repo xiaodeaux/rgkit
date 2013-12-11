@@ -20,4 +20,4 @@ class TestAttack(base.BaseTestCase):
             [], [])
 
         assert(bot1)
-        self.assertEqual(self._game.history[0][0][0][2], ['guard'])
+        self.assertEqual(self._game.history[0][0][0]['action'], ['guard'])
