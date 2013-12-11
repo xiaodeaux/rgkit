@@ -1,4 +1,4 @@
-rgkit -- Testing kit for [Robot Game](http://robotgame.whitehalmos.org)
+rgkit -- Testing kit for [Robot Game](http://robotgame.net/)
 ========================
 
 [![Build Status](https://travis-ci.org/WhiteHalmos/rgkit.png?branch=master)]
