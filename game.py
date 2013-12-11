@@ -198,6 +198,11 @@ class AbstractGame(object):
         self._id_inc = 0
         self.turns = 0
 
+        self.action_at = []
+
+    def get_action_at(self, idx):
+        return self.action_at[idx]
+
     def get_robot_id(self):
         ret = self._id_inc
         self._id_inc += 1
@@ -298,7 +303,7 @@ class AbstractGame(object):
         self._robots.append(robot)
         self._field[loc] = robot
         if self._record_actions:
-            self.action_at[self.turns][loc] = {
+            self.get_action_at(self.turns)[loc] = {
                 'name': 'spawn',
                 'target': None,
                 'hp': robot.hp,
@@ -337,7 +342,7 @@ class AbstractGame(object):
     def make_history(self, actions):
         global settings
 
-        robots = []
+        robots = [[] for i in range(2)]
         for robot in self._robots:
             robot_info = {}
             props = (settings.exposed_properties +
@@ -346,7 +351,7 @@ class AbstractGame(object):
                 robot_info[prop] = getattr(robot, prop)
             if robot in actions:
                 robot_info['action'] = actions[robot]
-            robots.append(robot_info)
+            robots[robot.player_id].append(robot_info)
         return robots
 
     def run_turn(self):
@@ -369,10 +374,11 @@ class AbstractGame(object):
         if self._record_actions:
             for robot, action in actions.iteritems():
                 loc = self.last_locs.get(robot.location, robot.location)
-                log_action = self.action_at[self.turns].get(loc, {})
+                log_action = self.get_action_at(self.turns).get(loc, {})
                 hp_start = self.last_hps.get(loc, robot.hp)
                 log_action['name'] = log_action.get('name', action[0])
-                log_action['target'] = action[1] if len(action) > 1 else None
+                log_action['target'] = log_action.get(
+                    'target', action[1] if len(action) > 1 else None)
                 log_action['hp'] = log_action.get('hp', hp_start)
                 log_action['hp_end'] = log_action.get('hp_end', robot.hp)
                 log_action['loc'] = log_action.get('loc', loc)
@@ -380,7 +386,7 @@ class AbstractGame(object):
                                                        robot.location)
                 log_action['player'] = log_action.get('player',
                                                       robot.player_id)
-                self.action_at[self.turns][loc] = log_action
+                self.get_action_at(self.turns)[loc] = log_action
 
         self.remove_dead()
         self.turns += 1
@@ -470,62 +476,11 @@ class ThreadedGame(AbstractGame):
 
         self.spawn_starting()
 
-    def spawn_robot(self, player_id, loc):
-        if self.robot_at_loc(loc) is not None:
-            return False
-
-        robot_id = self.get_robot_id()
-        robot = InternalRobot(
-            loc, settings.robot_hp, player_id, robot_id, self._field)
-        self._robots.append(robot)
-        self._field[loc] = robot
-        if self._record_actions:
-            self.action_at.forced_get(self.turns)[loc] = {
-                'name': 'spawn',
-                'target': None,
-                'hp': robot.hp,
-                'hp_end': robot.hp,
-                'loc': loc,
-                'loc_end': loc,
-                'player': player_id
-            }
-        return True
+    def get_action_at(self, idx):
+        return self.action_at.forced_get(idx)
 
     def run_turn(self):
-        global settings
-        if self._print_info:
-            print (' running turn %d ' % (self.turns + 1)).center(70, '-')
-
-        actions = self.make_robots_act()
-
-        if not self._unit_testing:
-            if self.turns % settings.spawn_every == 0:
-                self.clear_spawn_points()
-                self.spawn_robot_batch()
-
-        if self._record_history:
-            round_history = self.make_history(actions)
-            for i in (0, 1):
-                self.history[i].append(round_history[i])
-
-        if self._record_actions:
-            for robot, action in actions.iteritems():
-                loc = self.last_locs.get(robot.location, robot.location)
-                log_action = self.action_at.forced_get(self.turns).get(loc, {})
-                hp_start = self.last_hps.get(loc, robot.hp)
-                log_action['name'] = log_action.get('name', action[0])
-                log_action['target'] = action[1] if len(action) > 1 else None
-                log_action['hp'] = log_action.get('hp', hp_start)
-                log_action['hp_end'] = log_action.get('hp_end', robot.hp)
-                log_action['loc'] = log_action.get('loc', loc)
-                log_action['loc_end'] = log_action.get('loc_end',
-                                                       robot.location)
-                log_action['player'] = log_action.get('player',
-                                                      robot.player_id)
-                self.action_at.forced_get(self.turns)[loc] = log_action
-
-        self.remove_dead()
-        self.turns += 1
+        super(ThreadedGame, self).run_turn()
         self.per_turn_events[self.turns-1].set()
 
     def run_all_turns(self):
