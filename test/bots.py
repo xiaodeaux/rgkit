@@ -8,11 +8,7 @@ class RobotGuard:
 
 class RobotAttackRightWithFloatingLocation:
     def act(self, game):
-        return [
-            'attack',
-            (float(self.location[0] + 1),
-             float(self.location[1]))
-            ]
+        return ['attack', (float(self.location[0] + 1), float(self.location[1]))]
 
 class RobotAttackWithInvalidLocation:
     def act(self, game):
@@ -45,7 +41,7 @@ class RobotMoveInvalid:
 
 class RobotMoveRightAndGuard:
     def act(self, game):
-        if (self.location[0] % 2 == 0):
+        if self.location[0] % 2 == 0:
             return ['move', (self.location[0] + 1, self.location[1])]
         else:
             return ['guard']
@@ -53,32 +49,29 @@ class RobotMoveRightAndGuard:
 class RobotMoveInCircle:
     def act(self, game):
         from operator import add
-
-        moves = {0: {0: (1, 0), 1: (0, 1)}, 1: {0: (0, -1), 1: (-1, 0)}}
-
-        dest = tuple(map(add, self.location,
-                         moves[self.location[1] % 2][self.location[0] % 2]))
-
+        moves = {
+            0: {0: (1, 0), 1: (0, 1)},
+            1: {0: (0, -1), 1: (-1, 0)}
+        }
+        dest = tuple(map(add, self.location, moves[self.location[1] % 2][self.location[0] % 2]))
         return ['move', dest]
 
 class RobotMoveInCircleCounterclock:
     def act(self, game):
         from operator import add
-
-        moves = {0: {0: (0, 1), 1: (-1, 0)}, 1: {0: (1, 0), 1: (0, -1)}}
-
-        dest = tuple(map(add, self.location,
-                         moves[self.location[1] % 2][self.location[0] % 2]))
-
+        moves = {
+            0: {0: (0, 1), 1: (-1, 0)},
+            1: {0: (1, 0), 1: (0, -1)}
+        }
+        dest = tuple(map(add, self.location, moves[self.location[1] % 2][self.location[0] % 2]))
         return ['move', dest]
 
 class RobotMoveInCircleCollision:
     def act(self, game):
         from operator import add
-
-        moves = {0: {0: (0, 1), 1: (-1, 0)}, 1: {0: (0, -1), 1: (0, -1)}}
-
-        dest = tuple(map(add, self.location,
-                         moves[self.location[1] % 2][self.location[0] % 2]))
-
+        moves = {
+            0: {0: (0, 1), 1: (-1, 0)},
+            1: {0: (0, -1), 1: (0, -1)}
+        }
+        dest = tuple(map(add, self.location, moves[self.location[1] % 2][self.location[0] % 2]))
         return ['move', dest]

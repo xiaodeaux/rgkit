@@ -58,6 +58,7 @@ class RobotSprite:
         self.id = action_info['player']
         self.renderer = render
         self.animation_offset = (0, 0)
+        self.action_info = action_info
 
         # Tkinter objects
         self.square = None
@@ -355,6 +356,7 @@ class Render:
     def update_title(self):
         turns = self.current_turn()
         max_turns = self._settings.max_turns
+        print(self._turn)
         red = len(self._game.history[0][self._turn - 1])
         green = len(self._game.history[1][self._turn - 1])
         info = ''

@@ -42,7 +42,12 @@ def make_player(fname):
         return game.Player(player_code.read())
 
 def play(players, print_info=True, animate_render=True, play_in_thread=False):
-    g = game.Game(*players, print_info=print_info, record_turns=True)
+    if play_in_thread:
+        g = game.ThreadedGame(*players, print_info=print_info,
+                    record_actions=True, record_history = True)
+    else:
+        g = game.Game(*players, print_info=print_info, record_actions=True,
+                    record_history = True)
 
     if print_info:
         # only import render if we need to render the game;
@@ -50,7 +55,7 @@ def play(players, print_info=True, animate_render=True, play_in_thread=False):
         # run headless
         import render
 
-        g.run_all_turns(play_in_thread)
+        g.run_all_turns()
         render.Render(g, game.settings, animate_render)
         print g.history
 
