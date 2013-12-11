@@ -3,6 +3,8 @@ rgkit -- Testing kit for [Robot Game](http://robotgame.whitehalmos.org)
 
 [![Build Status](https://travis-ci.org/WhiteHalmos/rgkit.png?branch=master)]
 (https://travis-ci.org/WhiteHalmos/rgkit)
+[![Coverage Status](https://coveralls.io/repos/WhiteHalmos/rgkit/badge.png)]
+(https://coveralls.io/r/WhiteHalmos/rgkit)
 
 Please see this [link](http://robotgame.whitehalmos.org/kit) for
 the instructions to the game.
