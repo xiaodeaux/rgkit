@@ -9,9 +9,10 @@ the instructions to the game.
 
 Here are some excellent tools made by fellow players!
 * [Open Source Bots](https://github.com/mpeterv/robotgame-bots)
-* [RG Simulator](https://github.com/mpeterv/rgsimulator)
-* [RG Compare](https://github.com/mueslo/rgcompare)
-* [RG Fiddle](https://github.com/bsuh/rgfiddle)
+* [Simulate Situations](https://github.com/mpeterv/rgsimulator)
+* [Compare Bots](https://github.com/mueslo/rgcompare)
+* [Browser IDE](https://github.com/bsuh/rgfiddle)
+* [Fetch Stats](https://github.com/afffsdd/Get-Robot)
 
 Robot Game's original creator is
 [Brandon Hisao](https://github.com/brandonhsiao).
